@@ -110,6 +110,8 @@ Copie o resultado completo para `APP_KEY` no `.env` da Hostinger. Essa chave dev
 
 O workflow preserva o `.env`, as imagens enviadas e os arquivos de execução do Laravel em todos os deploys.
 
+Na hospedagem compartilhada, a função PHP `exec()` está desativada. Por isso, o workflow cria o link `public/storage` diretamente pelo Linux, sem depender de `php artisan storage:link`.
+
 ## 5. Cadastrar os segredos no GitHub
 
 No repositório do GitHub, abra **Settings → Secrets and variables → Actions → New repository secret** e crie exatamente estes cinco segredos:
