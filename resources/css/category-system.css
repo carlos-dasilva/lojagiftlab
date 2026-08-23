@@ -1,0 +1,37 @@
+.product-actions { margin-bottom: 24px; }
+.product-actions p { margin: 0; }
+.admin-create-button,
+.admin-actions > .btn.primary { min-height: 44px; padding: 11px 20px; border-color: #d9ddeb; background: #fff; color: var(--navy); box-shadow: 0 4px 14px #0b163d0d; font-size: 15px; line-height: 1.3; }
+.admin-create-button span { color: var(--purple); font-size: 20px; line-height: 1; }
+.category-picker { min-width: 0; margin: 0 0 15px; padding: 0; border: 0; }
+.category-picker legend { margin-bottom: 4px; color: var(--navy); font-size: 13px; font-weight: 750; }
+.category-picker > p,
+.category-intro { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.category-options,
+.table-categories,
+.product-category-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.category-options { padding: 13px; border: 1px solid #dfe2ec; border-radius: 14px; background: var(--paper); }
+.category-option { display: inline-flex; margin: 0; cursor: pointer; }
+.category-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.category-option span,
+.table-categories span,
+.product-category-tags a,
+.product-category-tags > span { border: 1px solid #ddd6f4; border-radius: 999px; padding: 5px 10px; background: #fff; color: var(--purple); font-size: 11px; font-weight: 800; line-height: 1.2; }
+.category-option input:checked + span { border-color: var(--purple); background: var(--purple); color: #fff; }
+.category-option input:focus-visible + span { outline: 3px solid #08b9b333; outline-offset: 2px; }
+.category-picker .field-help { display: block; margin-top: 8px; }
+.category-picker .field-help a { color: var(--purple); text-decoration: underline; }
+.product-category-tags { margin-bottom: 6px; }
+.product-category-tags a,
+.product-category-tags > span { padding: 3px 7px; border: 0; background: #f1edfb; font-size: 10px; }
+.detail-category-tags { margin-bottom: 12px; }
+.detail-category-tags a { padding: 6px 10px; font-size: 12px; }
+@media (max-width: 760px) {
+    .product-actions { align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+    .admin-create-button,
+    .admin-actions > .btn.primary { flex: 0 0 auto; width: auto; min-height: 0; padding: 7px 12px; font-size: 12px; }
+}
+@media (max-width: 420px) {
+    .product-actions { flex-direction: column; }
+    .admin-create-button { align-self: flex-start; }
+}

@@ -1,0 +1,6 @@
+@extends('layouts.admin')
+@section('title', 'Categorias')
+@section('heading', 'Categorias')
+@section('content')
+<div class="admin-two-cols"><section class="admin-card"><span class="kicker">Organização flexível</span><h2>Nova categoria</h2><p class="category-intro">Crie categorias conforme precisar. Cada produto pode receber várias delas, como hashtags.</p><form method="post" action="{{ route('admin.categories.store') }}" class="stack-form">@csrf<label>Nome <b class="required-mark">*</b><input name="name" placeholder="Ex.: Gamer" required></label><label>Descrição<textarea name="description" rows="4"></textarea></label><button class="btn primary">Criar categoria</button></form></section><section class="admin-card"><h2>Categorias cadastradas</h2>@foreach ($categories as $category)<div class="category-row"><div><strong>#{{ $category->name }}</strong><small>{{ $category->products_count }} produtos</small></div><form method="post" action="{{ route('admin.categories.destroy', $category) }}" data-confirm data-confirm-title="Excluir categoria?" data-confirm-message="Ela será removida dos produtos vinculados, sem excluir nenhum produto." data-confirm-label="Excluir categoria">@csrf @method('delete')<button>Excluir</button></form></div>@endforeach</section></div>
+@endsection

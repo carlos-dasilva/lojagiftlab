@@ -1,0 +1,25 @@
+.sales-links-heading { align-items: flex-start; gap: 24px; margin-bottom: 18px; }
+.sales-links-heading h2 { margin: 4px 0; }
+.sales-links-heading p { margin: 0; color: var(--muted); font-size: 13px; font-weight: 500; }
+.add-sales-link { flex: 0 0 auto; padding: 9px 16px; font-size: 13px; }
+.sales-links-list { display: grid; gap: 10px; }
+.sales-link-row { display: grid; grid-template-columns: minmax(180px, .6fr) minmax(280px, 1.4fr) auto; align-items: end; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); }
+.sales-link-row label { margin: 0; }
+.remove-sales-link { height: 42px; padding: 0 10px; border: 0; background: transparent; color: var(--coral); font-size: 12px; font-weight: 800; }
+.sales-links-empty { padding: 24px; border: 1px dashed #cdd2e2; border-radius: 16px; text-align: center; color: var(--muted); }
+.sales-links-empty span { color: var(--purple); font-size: 24px; }
+.sales-links-empty p { margin: 4px 0 0; }
+.sales-box > p { margin: -8px 0 16px; color: var(--muted); font-size: 14px; }
+.channel-button { position: relative; min-height: 58px; padding-right: 46px; background: #fff; transition: .2s; }
+.channel-button:hover { transform: translateY(-2px); border-color: var(--channel); box-shadow: 0 9px 25px #0b163d12; }
+.channel-button::after { content: 'Abrir anúncio →'; position: absolute; right: 14px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.channel-button.contact::after { content: 'Entrar em contato →'; }
+@media (max-width: 760px) {
+    .sales-links-heading { display: block; }
+    .add-sales-link { margin-top: 12px; }
+    .sales-link-row { grid-template-columns: 1fr; gap: 4px; }
+    .remove-sales-link { justify-self: start; height: 32px; padding: 0; }
+    .channel-button { padding-right: 14px; }
+    .channel-button::after { content: '→'; }
+    .channel-button.contact::after { content: '→'; }
+}

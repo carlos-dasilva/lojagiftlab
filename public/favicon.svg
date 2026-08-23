@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gift Lab">
+  <rect width="64" height="64" rx="14" fill="#0b163d"/>
+  <path d="M11 27h21v27H16a5 5 0 0 1-5-5V27Z" fill="#08b9b3"/>
+  <path d="M32 27h21v22a5 5 0 0 1-5 5H32V27Z" fill="#7139c6"/>
+  <path d="M8 22a4 4 0 0 1 4-4h40a4 4 0 0 1 4 4v8H8v-8Z" fill="#ffb62b"/>
+  <path d="M28 18c-7-1-11-4-10-8 1-4 7-3 14 8m4 0c7-1 11-4 10-8-1-4-7-3-14 8" fill="none" stroke="#ff3d5f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28 18h8v36h-8z" fill="#fff"/>
+  <circle cx="32" cy="35" r="3" fill="#ff3d5f"/>
+</svg>
