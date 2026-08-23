@@ -52,6 +52,7 @@
             </label>
             <label class="span-2 @error('description') has-error @enderror">
                 <span>Descrição completa</span><textarea name="description" rows="8">{{ old('description', $product->description) }}</textarea>
+                <small class="field-help">Você pode usar Markdown: <code>**negrito**</code>, <code>*itálico*</code>, listas com <code>- item</code> e títulos com <code>## Título</code>.</small>
                 @error('description') <small class="field-error">{{ $message }}</small> @enderror
             </label>
         </div>

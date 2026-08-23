@@ -46,6 +46,20 @@ class PublicCatalogTest extends TestCase
             ->assertSee(route('catalog'), false);
     }
 
+    public function test_product_description_renders_safe_markdown(): void
+    {
+        $product = $this->product();
+        $product->update([
+            'description' => "**Joy-Con não incluso.**\n\n- Consulte as cores disponíveis.\n\n<script>alert('teste')</script>",
+        ]);
+
+        $this->get('/produto/'.$product->slug)
+            ->assertOk()
+            ->assertSee('<strong>Joy-Con não incluso.</strong>', false)
+            ->assertSee('<li>Consulte as cores disponíveis.</li>', false)
+            ->assertDontSee('<script>', false);
+    }
+
     public function test_marketplace_price_is_rendered_and_cost_is_never_rendered(): void
     {
         $p = $this->product();
