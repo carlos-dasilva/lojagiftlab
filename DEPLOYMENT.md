@@ -29,18 +29,22 @@ Confirme antes do commit que o arquivo `.env` não aparece na lista. Ele contém
 
 ## 1. Preparar o domínio na Hostinger
 
-No hPanel, adicione o domínio `lojagiftlab.com` ao plano, ative o SSL e force HTTPS. O diretório público (document root) do domínio deve apontar para a pasta `public` do Laravel.
+No hPanel, adicione o domínio `lojagiftlab.com` ao plano, ative o SSL e force HTTPS. Nesta conta, a raiz do domínio já foi identificada como:
+
+```text
+/home/u597788202/domains/lojagiftlab.com/public_html
+```
+
+Esse será o `HOSTINGER_DEPLOY_PATH`. O projeto inclui um `.htaccess` na raiz que encaminha as visitas para a pasta `public` do Laravel, conforme o modelo de hospedagem compartilhada da Hostinger.
 
 Em **Configuração PHP**, selecione PHP **8.3** (PHP 8.2 também é compatível) e mantenha habilitadas as extensões comuns do Laravel, especialmente `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `ctype`, `fileinfo` e `curl`.
 
-Exemplo de organização (o nome real do usuário será diferente):
+Organização desta hospedagem:
 
 ```text
-/home/u123456789/domains/lojagiftlab.com/giftlab        ← HOSTINGER_DEPLOY_PATH
-/home/u123456789/domains/lojagiftlab.com/giftlab/public ← raiz pública do domínio
+/home/u597788202/domains/lojagiftlab.com/public_html        ← aplicação Laravel
+/home/u597788202/domains/lojagiftlab.com/public_html/public ← arquivos públicos
 ```
-
-Não aponte o domínio para a raiz `giftlab`, pois isso poderia expor arquivos internos do Laravel.
 
 ## 2. Criar o banco de dados
 
@@ -116,7 +120,7 @@ No repositório do GitHub, abra **Settings → Secrets and variables → Actions
 | `HOSTINGER_SSH_PORT` | Porta exibida no hPanel, normalmente `65002` |
 | `HOSTINGER_SSH_USER` | Usuário SSH exibido no hPanel |
 | `HOSTINGER_SSH_PRIVATE_KEY` | Todo o conteúdo do arquivo `giftlab_hostinger`, incluindo BEGIN e END |
-| `HOSTINGER_DEPLOY_PATH` | Caminho absoluto da aplicação, terminando em `/giftlab` |
+| `HOSTINGER_DEPLOY_PATH` | `/home/u597788202/domains/lojagiftlab.com/public_html` |
 
 Não cadastre a senha do banco nesses segredos: ela fica apenas no `.env` da Hostinger.
 
@@ -148,6 +152,6 @@ O restante será automático. Não execute `db:seed` na produção, pois ele ins
 php artisan admin:create
 ```
 
-## Se o plano não permitir alterar a raiz pública
+## Integração GIT do hPanel
 
-Pare antes de publicar e consulte o suporte da Hostinger para apontar `lojagiftlab.com` para a pasta `giftlab/public`. Não mova apenas o `index.php` sem ajustar a estrutura, e nunca exponha `.env`, `vendor`, `storage` ou o código da aplicação dentro da área pública.
+Não ative o auto-deploy nativo do menu **Avançado → GIT**. Ele publicaria imediatamente ao receber alterações na `main`, sem aguardar o resultado dos testes. A autorização do GitHub pode permanecer, mas o deploy deste projeto será feito exclusivamente pelo GitHub Actions via SSH.
