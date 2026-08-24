@@ -50,16 +50,18 @@ class PublicCatalogTest extends TestCase
     {
         $product = $this->product();
         $product->update([
-            'short_description' => '**Descrição curta em destaque.**',
-            'description' => "**Joy-Con não incluso.**\n\n- Consulte as cores disponíveis.\n\n<script>alert('teste')</script>",
+            'short_description' => "**Descrição curta em destaque.**\nSegunda linha",
+            'description' => "**Joy-Con não incluso.**\nConsulte as cores disponíveis.\n\nNovo parágrafo.\n\n<script>alert('teste')</script>",
         ]);
 
         $this->get('/produto/'.$product->slug)
             ->assertOk()
             ->assertSee('<strong>Descrição curta em destaque.</strong>', false)
+            ->assertSee("<br>\nSegunda linha", false)
             ->assertSee('<strong>Joy-Con não incluso.</strong>', false)
-            ->assertSee('<li>Consulte as cores disponíveis.</li>', false)
-            ->assertSee('content="Descrição curta em destaque."', false)
+            ->assertSee("<br>\nConsulte as cores disponíveis.", false)
+            ->assertSee("</p>\n<p>Novo parágrafo.</p>", false)
+            ->assertSee('content="Descrição curta em destaque. Segunda linha"', false)
             ->assertDontSee('content="**Descrição curta em destaque.**"', false)
             ->assertDontSee('<script>', false);
 
