@@ -50,14 +50,22 @@ class PublicCatalogTest extends TestCase
     {
         $product = $this->product();
         $product->update([
+            'short_description' => '**Descrição curta em destaque.**',
             'description' => "**Joy-Con não incluso.**\n\n- Consulte as cores disponíveis.\n\n<script>alert('teste')</script>",
         ]);
 
         $this->get('/produto/'.$product->slug)
             ->assertOk()
+            ->assertSee('<strong>Descrição curta em destaque.</strong>', false)
             ->assertSee('<strong>Joy-Con não incluso.</strong>', false)
             ->assertSee('<li>Consulte as cores disponíveis.</li>', false)
+            ->assertSee('content="Descrição curta em destaque."', false)
+            ->assertDontSee('content="**Descrição curta em destaque.**"', false)
             ->assertDontSee('<script>', false);
+
+        $this->get('/produtos')
+            ->assertOk()
+            ->assertSee('<strong>Descrição curta em destaque.</strong>', false);
     }
 
     public function test_marketplace_price_is_rendered_and_cost_is_never_rendered(): void

@@ -48,6 +48,7 @@
             </label>
             <label class="span-2 @error('short_description') has-error @enderror">
                 <span>Descrição curta</span><textarea name="short_description" rows="2">{{ old('short_description', $product->short_description) }}</textarea>
+                <small class="field-help">Também aceita Markdown, como <code>**negrito**</code> e <code>*itálico*</code>.</small>
                 @error('short_description') <small class="field-error">{{ $message }}</small> @enderror
             </label>
             <label class="span-2 @error('description') has-error @enderror">

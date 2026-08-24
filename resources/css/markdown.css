@@ -11,6 +11,10 @@
     color: var(--muted);
 }
 
+.markdown-content p {
+    margin: 0 0 1.25em;
+}
+
 .markdown-content strong {
     color: var(--navy);
 }
@@ -54,4 +58,26 @@
     border-radius: 5px;
     background: #f1edfa;
     color: var(--purple);
+}
+
+.markdown-content--short {
+    margin-bottom: 1em;
+}
+
+.markdown-content--short p {
+    margin-bottom: 1em;
+}
+
+.product-card-description {
+    min-height: 42px;
+    max-height: 4.2em;
+    margin-bottom: 18px;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.markdown-content--card p {
+    margin: 0;
+    font-size: inherit;
 }
