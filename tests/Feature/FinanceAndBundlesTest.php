@@ -105,25 +105,36 @@ class FinanceAndBundlesTest extends TestCase
         $base = $this->product('Base para controle');
         $figure = $this->product('Mini figura');
 
-        $response = $this->actingAs($this->admin())->post(route('admin.products.store'), [
+        $admin = $this->admin();
+        $response = $this->actingAs($admin)->post(route('admin.bundles.store'), [
+            'name' => 'Kit Gamer',
+            'cost_price' => 45,
+            'status' => 'published',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $bundle = Product::where('slug', 'kit-gamer')->firstOrFail();
+        $response->assertRedirect(route('admin.bundles.edit', $bundle));
+
+        $this->actingAs($admin)->put(route('admin.bundles.update', $bundle), [
+            'items' => [
+                $base->id => ['selected' => 1, 'quantity' => 1],
+                $figure->id => ['selected' => 1, 'quantity' => 2],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)->put(route('admin.products.update', $bundle), [
             'name' => 'Kit Gamer',
             'cost_price' => 45,
             'condition' => 'new',
             'status' => 'published',
-            'is_bundle' => 1,
-            'bundle_items' => [
-                $base->id => ['selected' => 1, 'quantity' => 1],
-                $figure->id => ['selected' => 1, 'quantity' => 2],
-            ],
             'sales_links' => [[
                 'channel' => 'Shopee',
                 'url' => 'https://shopee.com.br/kit-gamer',
                 'price' => 129.90,
             ]],
-        ]);
+        ])->assertSessionHasNoErrors();
 
-        $response->assertSessionHasNoErrors();
-        $bundle = Product::where('slug', 'kit-gamer')->firstOrFail();
         $this->assertTrue($bundle->is_bundle);
         $this->assertDatabaseHas('bundle_product', ['bundle_id' => $bundle->id, 'component_product_id' => $figure->id, 'quantity' => 2]);
         $this->assertDatabaseHas('product_sales_links', ['product_id' => $bundle->id, 'price' => 129.90]);
@@ -133,6 +144,19 @@ class FinanceAndBundlesTest extends TestCase
             ->assertSee('O que vem neste conjunto')
             ->assertSee('Mini figura')
             ->assertSee('2 unidades');
+    }
+
+    public function test_bundle_composition_search_only_shows_matching_products(): void
+    {
+        $admin = $this->admin();
+        $bundle = $this->product('Kit cozinha', ['is_bundle' => true]);
+        $this->product('Espátula azul');
+        $this->product('Controle gamer');
+
+        $this->actingAs($admin)->get(route('admin.bundles.edit', ['bundle' => $bundle, 'q' => 'Espátula']))
+            ->assertOk()
+            ->assertSee('Espátula azul')
+            ->assertDontSee('Controle gamer');
     }
 
     public function test_finance_area_requires_an_authenticated_admin(): void

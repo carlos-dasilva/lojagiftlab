@@ -8,6 +8,7 @@
     @if ($product->exists) @method('put') @endif
 
     <p class="required-note"><span class="required-mark">*</span> Campos obrigatórios</p>
+    @if($product->is_bundle)<div class="admin-card"><strong>Este produto é um conjunto.</strong> <a href="{{ route('admin.bundles.edit', $product) }}">Organizar os produtos incluídos →</a></div>@endif
 
     <section class="admin-card">
         <h2>Informações principais</h2>
@@ -57,21 +58,6 @@
                 @error('description') <small class="field-error">{{ $message }}</small> @enderror
             </label>
         </div>
-    </section>
-
-    <section class="admin-card bundle-editor">
-        <div class="card-head"><div><span class="kicker">Produto composto</span><h2>Conjunto de produtos</h2><p>Use esta opção para vender vários produtos juntos. O preço do conjunto é informado nos links de compra abaixo.</p></div></div>
-        <label class="check bundle-toggle"><input type="checkbox" name="is_bundle" value="1" @checked(old('is_bundle', $product->is_bundle))> Este produto é um conjunto</label>
-        @php($bundleSelection = old('bundle_items', $product->exists ? $product->bundleItems->mapWithKeys(fn ($item) => [$item->id => ['selected' => 1, 'quantity' => $item->pivot->quantity]])->all() : []))
-        <div class="bundle-items">
-            @forelse($bundleCandidates as $item)
-                @php($bundleItem = $bundleSelection[$item->id] ?? [])
-                <article><label class="check"><input type="checkbox" name="bundle_items[{{ $item->id }}][selected]" value="1" @checked($bundleItem['selected'] ?? false)> <span>{{ $item->name }}</span></label><label>Quantidade<input type="number" name="bundle_items[{{ $item->id }}][quantity]" min="1" max="9999" value="{{ $bundleItem['quantity'] ?? 1 }}"></label></article>
-            @empty
-                <div class="finance-empty">Cadastre produtos individuais antes de criar um conjunto.</div>
-            @endforelse
-        </div>
-        @error('bundle_items.*.quantity') <small class="field-error">{{ $message }}</small> @enderror
     </section>
 
     <section class="admin-card">
@@ -133,7 +119,7 @@
 
         <datalist id="sales-channel-suggestions">
             @foreach ($salesChannels as $channel)<option value="{{ $channel->name }}"></option>@endforeach
-            <option value="Mercado Livre"></option><option value="Shopee"></option><option value="OLX"></option>
+            <option value="Mercado Livre"></option><option value="Shopee"></option><option value="OLX"></option><option value="Direct do Instagram"></option>
         </datalist>
 
         <div class="sales-links-list" data-sales-links-list>

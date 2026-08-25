@@ -132,6 +132,27 @@ class ProductValidationTest extends TestCase
         $response->assertSessionHasErrors(['sales_links.0.url']);
     }
 
+    public function test_instagram_direct_channel_always_uses_store_profile_url(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $response = $this->actingAs($admin)->post('/admin/products', [
+            'name' => 'Produto vendido no Instagram',
+            'cost_price' => 20,
+            'condition' => 'new',
+            'status' => 'published',
+            'sales_links' => [[
+                'channel' => 'Direct do Instagram',
+                'url' => 'https://exemplo.com/link-incorreto',
+                'price' => 50,
+            ]],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('product_sales_links', ['url' => 'https://www.instagram.com/lojagiftlab/', 'price' => 50]);
+        $this->assertDatabaseHas('sales_channels', ['name' => 'Direct do Instagram', 'slug' => 'direct-do-instagram']);
+    }
+
     public function test_product_edit_form_opens_without_sales_links(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);

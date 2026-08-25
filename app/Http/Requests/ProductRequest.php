@@ -11,7 +11,15 @@ class ProductRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->merge(['slug' => Str::slug($this->input('slug') ?: $this->input('name', ''))]);
+        $salesLinks = collect($this->input('sales_links', []))->map(function ($link) {
+            if (Str::slug($link['channel'] ?? '') === 'direct-do-instagram') {
+                $link['url'] = 'https://www.instagram.com/lojagiftlab/';
+            }
+
+            return $link;
+        })->all();
+
+        $this->merge(['slug' => Str::slug($this->input('slug') ?: $this->input('name', '')), 'sales_links' => $salesLinks]);
     }
 
     public function authorize(): bool

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BundleController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FinanceController;
@@ -42,6 +43,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('/financeiro/contas/{payable}/status', [FinanceController::class, 'togglePayable'])->name('finance.payables.toggle');
     Route::delete('/financeiro/contas/{payable}', [FinanceController::class, 'destroyPayable'])->name('finance.payables.destroy');
     Route::get('/financeiro/extrato', [FinanceController::class, 'statement'])->name('finance.statement');
+    Route::get('/conjuntos', [BundleController::class, 'index'])->name('bundles.index');
+    Route::post('/conjuntos', [BundleController::class, 'store'])->name('bundles.store');
+    Route::get('/conjuntos/{bundle}/editar', [BundleController::class, 'edit'])->name('bundles.edit');
+    Route::put('/conjuntos/{bundle}', [BundleController::class, 'update'])->name('bundles.update');
     Route::resource('products', ProductController::class)->except('show');
     Route::get('/products/{product}', fn (Product $product) => redirect()->route('admin.products.edit', $product))->name('products.show');
     Route::patch('/products/{product}/images/{image}/primary', [ProductController::class, 'primaryImage'])->name('products.images.primary');

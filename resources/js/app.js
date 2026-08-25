@@ -96,6 +96,9 @@ const salesLinksEditor=document.querySelector('[data-sales-links-editor]');
 if(salesLinksEditor){
     const list=salesLinksEditor.querySelector('[data-sales-links-list]');
     const empty=salesLinksEditor.querySelector('[data-sales-links-empty]');
+    const instagramDirectUrl='https://www.instagram.com/lojagiftlab/';
+    const normalizeChannel=value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+    const fillInstagramUrl=row=>{const channel=row.querySelector('input[name$="[channel]"]');const url=row.querySelector('input[name$="[url]"]');if(normalizeChannel(channel?.value||'')==='direct do instagram'){url.value=instagramDirectUrl;url.readOnly=true;}else if(url?.readOnly){url.readOnly=false;url.value='';}};
     const refreshEmpty=()=>{empty.hidden=Boolean(list.querySelector('[data-sales-link-row]'));};
     const addRow=()=>{
         const index=`new_${Date.now()}`;
@@ -108,6 +111,8 @@ if(salesLinksEditor){
         row.querySelector('input').focus();
     };
     salesLinksEditor.querySelector('[data-add-sales-link]').addEventListener('click',addRow);
+    salesLinksEditor.addEventListener('input',event=>{if(event.target.matches('input[name$="[channel]"]'))fillInstagramUrl(event.target.closest('[data-sales-link-row]'));});
+    salesLinksEditor.querySelectorAll('[data-sales-link-row]').forEach(fillInstagramUrl);
     salesLinksEditor.addEventListener('click',event=>{const button=event.target.closest('[data-remove-sales-link]');if(!button)return;button.closest('[data-sales-link-row]').remove();refreshEmpty();});
 }
 

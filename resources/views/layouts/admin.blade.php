@@ -19,6 +19,7 @@
         <nav>
             <a href="{{ route('admin.dashboard') }}">⌂ Dashboard</a>
             <a href="{{ route('admin.products.index') }}">◈ Produtos</a>
+            <a href="{{ route('admin.bundles.index') }}">▦ Conjuntos</a>
             <a href="{{ route('admin.categories.index') }}">⌁ Categorias</a>
             <a href="{{ route('admin.finance.index') }}">$ Financeiro</a>
             <a href="{{ route('admin.settings.edit') }}">⚙ Configurações</a>
