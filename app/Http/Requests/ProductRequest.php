@@ -33,6 +33,7 @@ class ProductRequest extends FormRequest
                 }
             }], 'videos.*.title' => 'nullable|string|max:120',
             'sales_links' => 'nullable|array|max:20', 'sales_links.*.channel' => 'required_with:sales_links.*.url,sales_links.*.price|nullable|string|max:80', 'sales_links.*.url' => 'required_with:sales_links.*.channel,sales_links.*.price|nullable|url:http,https|max:2000', 'sales_links.*.price' => 'required_with:sales_links.*.channel,sales_links.*.url|nullable|numeric|min:0.01|max:9999999999',
+            'is_bundle' => 'boolean', 'bundle_items' => 'nullable|array', 'bundle_items.*.selected' => 'nullable|boolean', 'bundle_items.*.quantity' => 'nullable|integer|min:1|max:9999',
         ];
     }
 
@@ -43,6 +44,6 @@ class ProductRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['name' => 'nome', 'slug' => 'endereço amigável', 'categories.*' => 'categoria', 'short_description' => 'descrição curta', 'description' => 'descrição completa', 'cost_price' => 'preço de custo', 'stock' => 'estoque', 'weight_kg' => 'peso', 'width_cm' => 'largura', 'height_cm' => 'altura', 'length_cm' => 'comprimento', 'condition' => 'condição', 'status' => 'status', 'images.*' => 'imagem', 'videos.*.url' => 'link do vídeo', 'videos.*.title' => 'título do vídeo', 'sales_links.*.channel' => 'local de venda', 'sales_links.*.url' => 'link do anúncio', 'sales_links.*.price' => 'valor neste local'];
+        return ['name' => 'nome', 'slug' => 'endereço amigável', 'categories.*' => 'categoria', 'short_description' => 'descrição curta', 'description' => 'descrição completa', 'cost_price' => 'preço de custo', 'stock' => 'estoque', 'weight_kg' => 'peso', 'width_cm' => 'largura', 'height_cm' => 'altura', 'length_cm' => 'comprimento', 'condition' => 'condição', 'status' => 'status', 'images.*' => 'imagem', 'videos.*.url' => 'link do vídeo', 'videos.*.title' => 'título do vídeo', 'sales_links.*.channel' => 'local de venda', 'sales_links.*.url' => 'link do anúncio', 'sales_links.*.price' => 'valor neste local', 'bundle_items.*.quantity' => 'quantidade do item no conjunto'];
     }
 }

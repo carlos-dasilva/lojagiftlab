@@ -32,7 +32,7 @@ class CatalogController extends Controller
         if ($product->status->value !== 'published') {
             return response()->view('errors.product-not-found', [], 404);
         }
-        $product->load(['categories', 'images', 'videos', 'attributes', 'tags', 'salesLinks.channel']);
+        $product->load(['categories', 'images', 'videos', 'attributes', 'tags', 'salesLinks.channel', 'bundleItems.primaryImage']);
         $hash = hash('sha256', $r->session()->getId());
         $product->views()->firstOrCreate(['session_hash' => $hash], ['viewed_at' => now()]);
         $categoryIds = $product->categories->pluck('id');

@@ -33,7 +33,7 @@ class ProductController extends Controller
 
     public function create()
     {
-        return view('admin.products.form', ['product' => new Product, 'categories' => Category::orderBy('name')->get(), 'salesChannels' => SalesChannel::orderBy('name')->get()]);
+        return view('admin.products.form', ['product' => new Product, 'categories' => Category::orderBy('name')->get(), 'salesChannels' => SalesChannel::orderBy('name')->get(), 'bundleCandidates' => Product::where('is_bundle', false)->orderBy('name')->get()]);
     }
 
     public function store(ProductRequest $r)
@@ -44,6 +44,7 @@ class ProductController extends Controller
             $this->salesLinks($r, $product);
             $this->videos($r, $product);
             $this->images($r, $product);
+            $this->bundleItems($r, $product);
 
             return $product;
         });
@@ -53,7 +54,7 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        return view('admin.products.form', ['product' => $product->load(['categories', 'images', 'videos', 'salesLinks.channel']), 'categories' => Category::orderBy('name')->get(), 'salesChannels' => SalesChannel::orderBy('name')->get()]);
+        return view('admin.products.form', ['product' => $product->load(['categories', 'images', 'videos', 'salesLinks.channel', 'bundleItems']), 'categories' => Category::orderBy('name')->get(), 'salesChannels' => SalesChannel::orderBy('name')->get(), 'bundleCandidates' => Product::where('is_bundle', false)->whereKeyNot($product->id)->orderBy('name')->get()]);
     }
 
     public function update(ProductRequest $r, Product $product)
@@ -64,6 +65,7 @@ class ProductController extends Controller
             $this->salesLinks($r, $product);
             $this->videos($r, $product);
             $this->images($r, $product);
+            $this->bundleItems($r, $product);
         });
 
         return redirect()->route('admin.products.edit', $product)->with('success', 'Produto atualizado com sucesso.');
@@ -111,9 +113,9 @@ class ProductController extends Controller
     {
         $d = $r->validated();
         $d['slug'] = $d['slug'] ?: Str::slug($d['name']);
-        foreach (['featured', 'is_new', 'customizable', 'made_to_order'] as $key) {
+        foreach (['featured', 'is_new', 'customizable', 'made_to_order', 'is_bundle'] as $key) {
             $d[$key] = $r->boolean($key);
-        }unset($d['images'], $d['categories'], $d['sales_links'], $d['videos']);
+        }unset($d['images'], $d['categories'], $d['sales_links'], $d['videos'], $d['bundle_items']);
         $d['sale_price'] = null;
         $d['discount_percentage'] = 0;
 
@@ -171,5 +173,20 @@ class ProductController extends Controller
                 $product->videos()->create(['youtube_id' => $youtubeId, 'title' => $video['title'] ?? null, 'order' => $order++]);
             }
         }
+    }
+
+    private function bundleItems(ProductRequest $request, Product $product): void
+    {
+        if (! $request->boolean('is_bundle')) {
+            $product->bundleItems()->detach();
+
+            return;
+        }
+
+        $items = collect($request->validated('bundle_items', []))
+            ->filter(fn ($item, $id) => ($item['selected'] ?? false) && (int) $id !== $product->id)
+            ->mapWithKeys(fn ($item, $id) => [(int) $id => ['quantity' => (int) ($item['quantity'] ?? 1)]])
+            ->all();
+        $product->bundleItems()->sync($items);
     }
 }

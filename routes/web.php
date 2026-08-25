@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\AuthController;
@@ -32,6 +33,15 @@ Route::middleware('guest')->group(function () {
 });
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/financeiro', [FinanceController::class, 'index'])->name('finance.index');
+    Route::get('/financeiro/vendas', [FinanceController::class, 'sales'])->name('finance.sales');
+    Route::post('/financeiro/vendas', [FinanceController::class, 'storeSale'])->name('finance.sales.store');
+    Route::delete('/financeiro/vendas/{sale}', [FinanceController::class, 'destroySale'])->name('finance.sales.destroy');
+    Route::get('/financeiro/contas', [FinanceController::class, 'payables'])->name('finance.payables');
+    Route::post('/financeiro/contas', [FinanceController::class, 'storePayable'])->name('finance.payables.store');
+    Route::patch('/financeiro/contas/{payable}/status', [FinanceController::class, 'togglePayable'])->name('finance.payables.toggle');
+    Route::delete('/financeiro/contas/{payable}', [FinanceController::class, 'destroyPayable'])->name('finance.payables.destroy');
+    Route::get('/financeiro/extrato', [FinanceController::class, 'statement'])->name('finance.statement');
     Route::resource('products', ProductController::class)->except('show');
     Route::get('/products/{product}', fn (Product $product) => redirect()->route('admin.products.edit', $product))->name('products.show');
     Route::patch('/products/{product}/images/{image}/primary', [ProductController::class, 'primaryImage'])->name('products.images.primary');

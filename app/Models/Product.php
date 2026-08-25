@@ -11,11 +11,11 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['category_id', 'name', 'slug', 'sku', 'short_description', 'description', 'cost_price', 'sale_price', 'discount_percentage', 'stock', 'weight_kg', 'width_cm', 'height_cm', 'length_cm', 'condition', 'condition_notes', 'featured', 'is_new', 'customizable', 'made_to_order', 'order', 'status'];
+    protected $fillable = ['category_id', 'name', 'slug', 'sku', 'short_description', 'description', 'cost_price', 'sale_price', 'discount_percentage', 'stock', 'weight_kg', 'width_cm', 'height_cm', 'length_cm', 'condition', 'condition_notes', 'featured', 'is_new', 'customizable', 'made_to_order', 'is_bundle', 'order', 'status'];
 
     protected $hidden = ['cost_price'];
 
-    protected $casts = ['status' => ProductStatus::class, 'cost_price' => 'decimal:2', 'sale_price' => 'decimal:2', 'discount_percentage' => 'decimal:2', 'weight_kg' => 'decimal:3', 'width_cm' => 'decimal:2', 'height_cm' => 'decimal:2', 'length_cm' => 'decimal:2', 'featured' => 'boolean', 'is_new' => 'boolean', 'customizable' => 'boolean', 'made_to_order' => 'boolean'];
+    protected $casts = ['status' => ProductStatus::class, 'cost_price' => 'decimal:2', 'sale_price' => 'decimal:2', 'discount_percentage' => 'decimal:2', 'weight_kg' => 'decimal:3', 'width_cm' => 'decimal:2', 'height_cm' => 'decimal:2', 'length_cm' => 'decimal:2', 'featured' => 'boolean', 'is_new' => 'boolean', 'customizable' => 'boolean', 'made_to_order' => 'boolean', 'is_bundle' => 'boolean'];
 
     public function categories()
     {
@@ -55,6 +55,21 @@ class Product extends Model
     public function videos()
     {
         return $this->hasMany(ProductVideo::class)->orderBy('order');
+    }
+
+    public function bundleItems()
+    {
+        return $this->belongsToMany(Product::class, 'bundle_product', 'bundle_id', 'component_product_id')->withPivot('quantity')->withTimestamps()->orderBy('name');
+    }
+
+    public function containingBundles()
+    {
+        return $this->belongsToMany(Product::class, 'bundle_product', 'component_product_id', 'bundle_id')->withPivot('quantity');
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class);
     }
 
     public function getStartingPriceAttribute(): ?string

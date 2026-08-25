@@ -59,6 +59,21 @@
         </div>
     </section>
 
+    <section class="admin-card bundle-editor">
+        <div class="card-head"><div><span class="kicker">Produto composto</span><h2>Conjunto de produtos</h2><p>Use esta opção para vender vários produtos juntos. O preço do conjunto é informado nos links de compra abaixo.</p></div></div>
+        <label class="check bundle-toggle"><input type="checkbox" name="is_bundle" value="1" @checked(old('is_bundle', $product->is_bundle))> Este produto é um conjunto</label>
+        @php($bundleSelection = old('bundle_items', $product->exists ? $product->bundleItems->mapWithKeys(fn ($item) => [$item->id => ['selected' => 1, 'quantity' => $item->pivot->quantity]])->all() : []))
+        <div class="bundle-items">
+            @forelse($bundleCandidates as $item)
+                @php($bundleItem = $bundleSelection[$item->id] ?? [])
+                <article><label class="check"><input type="checkbox" name="bundle_items[{{ $item->id }}][selected]" value="1" @checked($bundleItem['selected'] ?? false)> <span>{{ $item->name }}</span></label><label>Quantidade<input type="number" name="bundle_items[{{ $item->id }}][quantity]" min="1" max="9999" value="{{ $bundleItem['quantity'] ?? 1 }}"></label></article>
+            @empty
+                <div class="finance-empty">Cadastre produtos individuais antes de criar um conjunto.</div>
+            @endforelse
+        </div>
+        @error('bundle_items.*.quantity') <small class="field-error">{{ $message }}</small> @enderror
+    </section>
+
     <section class="admin-card">
         <h2>Estoque e embalagem</h2>
         <div class="form-grid cols-3">
