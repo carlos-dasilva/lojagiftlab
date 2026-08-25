@@ -16,7 +16,7 @@
 
 .installment-fields {
     display: grid;
-    grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 14px;
 }
 
@@ -36,10 +36,4 @@
     color: var(--purple);
     font-size: 11px;
     vertical-align: middle;
-}
-
-@media (max-width: 420px) {
-    .installment-fields {
-        grid-template-columns: 1fr;
-    }
 }
