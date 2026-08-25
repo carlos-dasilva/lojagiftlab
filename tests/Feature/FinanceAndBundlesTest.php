@@ -72,6 +72,34 @@ class FinanceAndBundlesTest extends TestCase
             ->assertSee('R$ 75,00');
     }
 
+    public function test_purchase_can_be_split_into_monthly_installments_without_losing_cents(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->post(route('admin.finance.payables.store'), [
+            'description' => 'Filamentos coloridos',
+            'category' => 'Matéria-prima',
+            'amount' => 100,
+            'installments' => 3,
+            'due_date' => '2026-08-31',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('success', 'Compra registrada em 3 parcelas.');
+        $this->assertDatabaseCount('payables', 3);
+        $this->assertSame(100.0, (float) Payable::sum('amount'));
+        $this->assertDatabaseHas('payables', ['installment_number' => 1, 'installments_total' => 3, 'amount' => 33.34]);
+        $this->assertDatabaseHas('payables', ['installment_number' => 2, 'installments_total' => 3, 'amount' => 33.33]);
+        $this->assertDatabaseHas('payables', ['installment_number' => 3, 'installments_total' => 3, 'amount' => 33.33]);
+        $this->assertSame(['2026-08-31', '2026-09-30', '2026-10-31'], Payable::orderBy('installment_number')->get()->map(fn (Payable $payable) => $payable->due_date->toDateString())->all());
+
+        $this->actingAs($admin)->get(route('admin.finance.payables'))
+            ->assertOk()
+            ->assertSee('1/3')
+            ->assertSee('2/3')
+            ->assertSee('3/3');
+    }
+
     public function test_bundle_can_link_products_with_quantities_and_its_own_marketplace_price(): void
     {
         $base = $this->product('Base para controle');

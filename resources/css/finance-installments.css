@@ -1,0 +1,45 @@
+.finance-form form {
+    display: grid;
+    gap: 16px;
+}
+
+.finance-form form > label,
+.installment-fields label {
+    margin: 0;
+}
+
+.finance-form input,
+.finance-form textarea {
+    width: 100%;
+    min-width: 0;
+}
+
+.installment-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+    gap: 14px;
+}
+
+.form-help {
+    display: block;
+    margin-top: -8px;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.installment-badge {
+    display: inline-flex;
+    margin-left: 6px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #f0e9ff;
+    color: var(--purple);
+    font-size: 11px;
+    vertical-align: middle;
+}
+
+@media (max-width: 420px) {
+    .installment-fields {
+        grid-template-columns: 1fr;
+    }
+}

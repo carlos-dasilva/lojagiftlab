@@ -9,6 +9,8 @@ use App\Models\Sale;
 use App\Models\SalesChannel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class FinanceController extends Controller
 {
@@ -77,16 +79,36 @@ class FinanceController extends Controller
             'description' => 'required|string|max:180',
             'category' => 'nullable|string|max:100',
             'amount' => 'required|numeric|min:0.01|max:9999999999',
+            'installments' => 'nullable|integer|min:1|max:120',
             'due_date' => 'required|date',
             'paid' => 'nullable|boolean',
             'notes' => 'nullable|string|max:2000',
-        ], $this->messages(), ['description' => 'descrição', 'category' => 'categoria', 'amount' => 'valor', 'due_date' => 'vencimento', 'notes' => 'observações']);
+        ], $this->messages(), ['description' => 'descrição', 'category' => 'categoria', 'amount' => 'valor total', 'installments' => 'número de parcelas', 'due_date' => 'primeiro vencimento', 'notes' => 'observações']);
 
-        $data['paid_at'] = $request->boolean('paid') ? now() : null;
-        unset($data['paid']);
-        Payable::create($data);
+        $installments = (int) ($data['installments'] ?? 1);
+        $totalInCents = (int) round(((float) $data['amount']) * 100);
+        $baseInCents = intdiv($totalInCents, $installments);
+        $remainingCents = $totalInCents % $installments;
+        $firstDueDate = Carbon::parse($data['due_date']);
+        $group = $installments > 1 ? (string) Str::uuid() : null;
 
-        return back()->with('success', 'Conta registrada com sucesso.');
+        DB::transaction(function () use ($data, $installments, $baseInCents, $remainingCents, $firstDueDate, $group, $request) {
+            foreach (range(1, $installments) as $number) {
+                Payable::create([
+                    'installment_group' => $group,
+                    'description' => $data['description'],
+                    'category' => $data['category'] ?? null,
+                    'amount' => ($baseInCents + ($number <= $remainingCents ? 1 : 0)) / 100,
+                    'installment_number' => $number,
+                    'installments_total' => $installments,
+                    'due_date' => $firstDueDate->copy()->addMonthsNoOverflow($number - 1)->toDateString(),
+                    'paid_at' => $request->boolean('paid') ? now() : null,
+                    'notes' => $data['notes'] ?? null,
+                ]);
+            }
+        });
+
+        return back()->with('success', $installments > 1 ? "Compra registrada em {$installments} parcelas." : 'Conta registrada com sucesso.');
     }
 
     public function togglePayable(Payable $payable)
