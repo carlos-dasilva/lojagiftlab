@@ -1,0 +1,23 @@
+.goal-settings form {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+}
+
+.goal-settings form > div,
+.goal-settings label,
+.goal-settings input {
+    width: 100%;
+    min-width: 0;
+}
+
+.goal-settings .btn {
+    width: fit-content;
+    max-width: 100%;
+    justify-self: start;
+}
+
+@media (max-width: 760px) {
+    .goal-settings .btn {
+        width: 100%;
+    }
+}
