@@ -24,4 +24,9 @@ class Sale extends Model
     {
         return ((float) $this->unit_price * $this->quantity) + (float) $this->shipping_income - (float) $this->fee;
     }
+
+    public function getGrossTotalAttribute(): float
+    {
+        return (float) $this->unit_price * $this->quantity;
+    }
 }

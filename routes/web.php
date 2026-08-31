@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\SalesGoalController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CatalogController;
@@ -43,6 +44,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('/financeiro/contas/{payable}/status', [FinanceController::class, 'togglePayable'])->name('finance.payables.toggle');
     Route::delete('/financeiro/contas/{payable}', [FinanceController::class, 'destroyPayable'])->name('finance.payables.destroy');
     Route::get('/financeiro/extrato', [FinanceController::class, 'statement'])->name('finance.statement');
+    Route::get('/financeiro/metas', [SalesGoalController::class, 'index'])->name('finance.goals');
+    Route::post('/financeiro/metas', [SalesGoalController::class, 'store'])->name('finance.goals.store');
     Route::get('/conjuntos', [BundleController::class, 'index'])->name('bundles.index');
     Route::post('/conjuntos', [BundleController::class, 'store'])->name('bundles.store');
     Route::get('/conjuntos/{bundle}/editar', [BundleController::class, 'edit'])->name('bundles.edit');
