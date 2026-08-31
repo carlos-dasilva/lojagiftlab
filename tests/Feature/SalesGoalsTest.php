@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CreditSale;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SalesGoal;
@@ -80,5 +81,19 @@ class SalesGoalsTest extends TestCase
             ->assertOk()
             ->assertSee('02/2026')
             ->assertSee('Em andamento');
+    }
+
+    public function test_credit_sale_counts_toward_sales_goal_even_before_payment(): void
+    {
+        Carbon::setTestNow('2026-08-31 10:00:00');
+        $admin = $this->admin();
+        $product = Product::create(['name' => 'Produto fiado', 'slug' => 'produto-fiado', 'cost_price' => 10, 'condition' => 'new', 'status' => 'published']);
+        CreditSale::create(['product_id' => $product->id, 'product_name' => $product->name, 'customer_name' => 'Cliente', 'quantity' => 2, 'unit_price' => 60, 'sold_at' => now(), 'received_at' => null]);
+        $this->actingAs($admin)->post(route('admin.finance.goals.store'), ['period_type' => 'weekly', 'target_amount' => 100]);
+
+        $this->actingAs($admin)->get(route('admin.finance.goals', ['type' => 'weekly']))
+            ->assertOk()
+            ->assertSee('Meta atingida')
+            ->assertSee('R$ 120,00');
     }
 }

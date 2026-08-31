@@ -39,6 +39,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/financeiro/vendas', [FinanceController::class, 'sales'])->name('finance.sales');
     Route::post('/financeiro/vendas', [FinanceController::class, 'storeSale'])->name('finance.sales.store');
     Route::delete('/financeiro/vendas/{sale}', [FinanceController::class, 'destroySale'])->name('finance.sales.destroy');
+    Route::get('/financeiro/fiados', [FinanceController::class, 'credits'])->name('finance.credits');
+    Route::post('/financeiro/fiados', [FinanceController::class, 'storeCredit'])->name('finance.credits.store');
+    Route::patch('/financeiro/fiados/{credit}/recebimento', [FinanceController::class, 'toggleCreditReceived'])->name('finance.credits.received');
+    Route::patch('/financeiro/fiados/{credit}/entrega', [FinanceController::class, 'toggleCreditDelivered'])->name('finance.credits.delivered');
+    Route::delete('/financeiro/fiados/{credit}', [FinanceController::class, 'destroyCredit'])->name('finance.credits.destroy');
     Route::get('/financeiro/contas', [FinanceController::class, 'payables'])->name('finance.payables');
     Route::post('/financeiro/contas', [FinanceController::class, 'storePayable'])->name('finance.payables.store');
     Route::patch('/financeiro/contas/{payable}/status', [FinanceController::class, 'togglePayable'])->name('finance.payables.toggle');

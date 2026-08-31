@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CreditSale;
 use App\Models\Sale;
 use App\Models\SalesGoal;
 use Carbon\Carbon;
@@ -21,11 +22,12 @@ class SalesGoalController extends Controller
         $offset = ($page - 1) * $perPage;
         $periods = $this->periods($type, $offset, min($perPage, $totalPeriods - $offset));
         $goals = SalesGoal::where('period_type', $type)->orderBy('effective_from')->get();
-        $sales = Sale::whereBetween('sold_at', [$periods->last()['start'], $periods->first()['end']])->get();
+        $sales = Sale::whereBetween('sold_at', [$periods->last()['start'], $periods->first()['end']])->get()
+            ->concat(CreditSale::whereBetween('sold_at', [$periods->last()['start'], $periods->first()['end']])->get());
 
         $evaluations = $periods->map(function ($period, $index) use ($goals, $sales, $page) {
             $goal = $goals->last(fn (SalesGoal $goal) => $goal->effective_from->lte($period['start']));
-            $actual = (float) $sales->filter(fn (Sale $sale) => $sale->sold_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total');
+            $actual = (float) $sales->filter(fn ($sale) => $sale->sold_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total');
             $target = $goal ? (float) $goal->target_amount : null;
             $difference = $target === null ? null : $actual - $target;
             $current = $index === 0 && $page === 1;
@@ -112,7 +114,8 @@ class SalesGoalController extends Controller
     {
         $firstSale = Sale::min('sold_at');
         $firstGoal = SalesGoal::where('period_type', $type)->min('effective_from');
-        $firstDate = collect([$firstSale, $firstGoal])->filter()->min();
+        $firstCredit = CreditSale::min('sold_at');
+        $firstDate = collect([$firstSale, $firstCredit, $firstGoal])->filter()->min();
 
         if (! $firstDate) {
             return 12;

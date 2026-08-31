@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CreditSale;
 use App\Models\Payable;
 use App\Models\Product;
 use App\Models\Sale;
@@ -19,13 +20,15 @@ class FinanceController extends Controller
         $from = now()->startOfMonth();
         $to = now()->endOfMonth();
         $sales = Sale::whereBetween('sold_at', [$from, $to])->get();
+        $receivedCredits = CreditSale::whereBetween('received_at', [$from, $to])->get();
         $paid = Payable::whereBetween('paid_at', [$from, $to])->sum('amount');
 
         return view('admin.finance.index', [
-            'income' => $sales->sum('net_total'),
+            'income' => $sales->sum('net_total') + $receivedCredits->sum('net_total'),
             'expenses' => (float) $paid,
             'pending' => (float) Payable::whereNull('paid_at')->sum('amount'),
-            'salesCount' => $sales->sum('quantity'),
+            'salesCount' => $sales->sum('quantity') + CreditSale::whereBetween('sold_at', [$from, $to])->sum('quantity'),
+            'receivables' => CreditSale::whereNull('received_at')->get()->sum('net_total'),
             'entries' => $this->entries($from, $to)->take(8),
         ]);
     }
@@ -66,6 +69,65 @@ class FinanceController extends Controller
         $sale->delete();
 
         return back()->with('success', 'Registro de venda excluído.');
+    }
+
+    public function credits()
+    {
+        return view('admin.finance.credits', [
+            'credits' => CreditSale::with(['product', 'channel'])->orderByRaw('received_at IS NOT NULL')->latest('sold_at')->latest()->paginate(20),
+            'products' => Product::orderBy('name')->get(),
+            'channels' => SalesChannel::where('active', true)->orderBy('name')->get(),
+            'pendingTotal' => CreditSale::whereNull('received_at')->get()->sum('net_total'),
+        ]);
+    }
+
+    public function storeCredit(Request $request)
+    {
+        $data = $request->validate([
+            'customer_name' => 'required|string|max:160',
+            'customer_contact' => 'nullable|string|max:160',
+            'product_id' => 'required|exists:products,id',
+            'sales_channel_id' => 'nullable|exists:sales_channels,id',
+            'quantity' => 'required|integer|min:1|max:99999',
+            'unit_price' => 'required|numeric|min:0.01|max:9999999999',
+            'shipping_income' => 'nullable|numeric|min:0|max:9999999999',
+            'fee' => 'nullable|numeric|min:0|max:9999999999',
+            'sold_at' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:sold_at',
+            'delivered' => 'nullable|boolean',
+            'notes' => 'nullable|string|max:2000',
+        ], $this->messages(), ['customer_name' => 'cliente', 'customer_contact' => 'contato', 'product_id' => 'produto', 'sales_channel_id' => 'canal de venda', 'quantity' => 'quantidade', 'unit_price' => 'valor unitário', 'shipping_income' => 'frete', 'fee' => 'taxas', 'sold_at' => 'data da venda', 'due_date' => 'previsão de pagamento', 'notes' => 'observações']);
+
+        $product = Product::findOrFail($data['product_id']);
+        $data['product_name'] = $product->name;
+        $data['shipping_income'] = $data['shipping_income'] ?? 0;
+        $data['fee'] = $data['fee'] ?? 0;
+        $data['delivered_at'] = $request->boolean('delivered') ? now() : null;
+        unset($data['delivered']);
+        CreditSale::create($data);
+
+        return back()->with('success', 'Venda fiada registrada. Ela entrará no caixa somente quando for marcada como recebida.');
+    }
+
+    public function toggleCreditReceived(CreditSale $credit)
+    {
+        $credit->update(['received_at' => $credit->received_at ? null : now()]);
+
+        return back()->with('success', $credit->fresh()->received_at ? 'Pagamento recebido e adicionado ao extrato.' : 'Pagamento reaberto e removido do extrato.');
+    }
+
+    public function toggleCreditDelivered(CreditSale $credit)
+    {
+        $credit->update(['delivered_at' => $credit->delivered_at ? null : now()]);
+
+        return back()->with('success', $credit->fresh()->delivered_at ? 'Pedido marcado como entregue.' : 'Pedido marcado como não entregue.');
+    }
+
+    public function destroyCredit(CreditSale $credit)
+    {
+        $credit->delete();
+
+        return back()->with('success', 'Venda fiada excluída.');
     }
 
     public function payables()
@@ -157,12 +219,19 @@ class FinanceController extends Controller
             'detail' => $payable->category ?: 'Conta paga',
             'amount' => (float) $payable->amount,
         ]);
+        $credits = CreditSale::with('channel')->whereBetween('received_at', [$from, $to])->get()->map(fn (CreditSale $credit) => [
+            'date' => $credit->received_at,
+            'type' => 'income',
+            'description' => $credit->quantity.'× '.$credit->product_name,
+            'detail' => 'Fiado recebido de '.$credit->customer_name,
+            'amount' => $credit->net_total,
+        ]);
 
-        return $sales->concat($expenses)->sortByDesc('date')->values();
+        return $sales->concat($credits)->concat($expenses)->sortByDesc('date')->values();
     }
 
     private function messages(): array
     {
-        return ['required' => 'O campo :attribute é obrigatório.', 'numeric' => 'Informe um valor válido em :attribute.', 'integer' => 'O campo :attribute deve ser um número inteiro.', 'min' => 'O campo :attribute deve ser no mínimo :min.', 'max' => 'O campo :attribute ultrapassou o limite permitido.', 'date' => 'Informe uma data válida em :attribute.', 'exists' => 'A opção escolhida em :attribute não é válida.'];
+        return ['required' => 'O campo :attribute é obrigatório.', 'numeric' => 'Informe um valor válido em :attribute.', 'integer' => 'O campo :attribute deve ser um número inteiro.', 'min' => 'O campo :attribute deve ser no mínimo :min.', 'max' => 'O campo :attribute ultrapassou o limite permitido.', 'date' => 'Informe uma data válida em :attribute.', 'after_or_equal' => 'O campo :attribute não pode ser anterior à data da venda.', 'exists' => 'A opção escolhida em :attribute não é válida.'];
     }
 }
