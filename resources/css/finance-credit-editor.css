@@ -26,6 +26,16 @@
     color: var(--muted);
 }
 
+.credit-items-heading [data-add-credit-item] {
+    width: auto;
+    min-height: 36px;
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
 .credit-item-list {
     display: grid;
     gap: 12px;
@@ -135,9 +145,12 @@
         grid-template-columns: 1fr;
     }
 
-    .credit-form-actions .btn,
-    .credit-items-heading .btn {
+    .credit-form-actions .btn {
         width: 100%;
+    }
+
+    .credit-items-heading [data-add-credit-item] {
+        width: fit-content;
     }
 
     .credit-receipt-layer form > div {
