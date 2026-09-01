@@ -52,6 +52,25 @@ class FinanceAndBundlesTest extends TestCase
             ->assertSee('R$ 195,00');
     }
 
+    public function test_admin_can_register_a_generic_sale_item_without_publishing_a_product(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->post(route('admin.finance.sales.store'), [
+            'product_id' => 'other',
+            'item_name' => 'Serviço de pintura especial',
+            'quantity' => 1,
+            'unit_price' => 35,
+            'sold_at' => now()->toDateString(),
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('sales', ['product_id' => null, 'product_name' => 'Serviço de pintura especial', 'unit_price' => 35]);
+        $this->assertDatabaseMissing('products', ['name' => 'Serviço de pintura especial']);
+        $this->actingAs($admin)->get(route('admin.finance.sales'))->assertOk()->assertSee('Serviço de pintura especial');
+        $this->actingAs($admin)->get(route('admin.finance.statement'))->assertSee('Serviço de pintura especial')->assertSee('R$ 35,00');
+    }
+
     public function test_payable_only_leaves_the_statement_after_it_is_marked_as_paid(): void
     {
         $admin = $this->admin();

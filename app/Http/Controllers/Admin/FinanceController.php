@@ -45,7 +45,12 @@ class FinanceController extends Controller
     public function storeSale(Request $request)
     {
         $data = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'other' && ! Product::whereKey($value)->exists()) {
+                    $fail('Escolha um produto válido ou a opção Outro / item avulso.');
+                }
+            }],
+            'item_name' => 'nullable|required_if:product_id,other|string|max:160',
             'sales_channel_id' => 'nullable|exists:sales_channels,id',
             'quantity' => 'required|integer|min:1|max:99999',
             'unit_price' => 'required|numeric|min:0.01|max:9999999999',
@@ -53,10 +58,13 @@ class FinanceController extends Controller
             'fee' => 'nullable|numeric|min:0|max:9999999999',
             'sold_at' => 'required|date',
             'notes' => 'nullable|string|max:2000',
-        ], $this->messages(), ['product_id' => 'produto', 'sales_channel_id' => 'canal de venda', 'quantity' => 'quantidade', 'unit_price' => 'valor unitário', 'shipping_income' => 'frete recebido', 'fee' => 'taxas', 'sold_at' => 'data da venda', 'notes' => 'observações']);
+        ], $this->messages(), ['product_id' => 'produto ou item avulso', 'item_name' => 'nome do item avulso', 'sales_channel_id' => 'canal de venda', 'quantity' => 'quantidade', 'unit_price' => 'valor unitário', 'shipping_income' => 'frete recebido', 'fee' => 'taxas', 'sold_at' => 'data da venda', 'notes' => 'observações']);
 
-        $product = Product::findOrFail($data['product_id']);
-        $data['product_name'] = $product->name;
+        $generic = $data['product_id'] === 'other';
+        $product = $generic ? null : Product::findOrFail($data['product_id']);
+        $data['product_id'] = $product?->id;
+        $data['product_name'] = $product?->name ?? trim($data['item_name']);
+        unset($data['item_name']);
         $data['shipping_income'] = $data['shipping_income'] ?? 0;
         $data['fee'] = $data['fee'] ?? 0;
         Sale::create($data);
@@ -301,6 +309,6 @@ class FinanceController extends Controller
 
     private function messages(): array
     {
-        return ['required' => 'O campo :attribute é obrigatório.', 'numeric' => 'Informe um valor válido em :attribute.', 'integer' => 'O campo :attribute deve ser um número inteiro.', 'min' => 'O campo :attribute deve ser no mínimo :min.', 'max' => 'O campo :attribute ultrapassou o limite permitido.', 'date' => 'Informe uma data válida em :attribute.', 'after_or_equal' => 'O campo :attribute não pode ser anterior à data da venda.', 'exists' => 'A opção escolhida em :attribute não é válida.'];
+        return ['required' => 'O campo :attribute é obrigatório.', 'required_if' => 'O campo :attribute é obrigatório para esta opção.', 'numeric' => 'Informe um valor válido em :attribute.', 'integer' => 'O campo :attribute deve ser um número inteiro.', 'min' => 'O campo :attribute deve ser no mínimo :min.', 'max' => 'O campo :attribute ultrapassou o limite permitido.', 'date' => 'Informe uma data válida em :attribute.', 'after_or_equal' => 'O campo :attribute não pode ser anterior à data da venda.', 'exists' => 'A opção escolhida em :attribute não é válida.'];
     }
 }

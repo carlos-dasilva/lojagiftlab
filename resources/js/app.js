@@ -154,6 +154,16 @@ if(creditEditor){
     creditEditor.addEventListener('click',event=>{const remove=event.target.closest('[data-remove-credit-item]');if(!remove)return;if(list.querySelectorAll('[data-credit-item-row]').length===1){window.GiftLabModal({type:'info',title:'A venda precisa de um item',message:'Adicione outro item antes de remover este.'});return;}remove.closest('[data-credit-item-row]').remove();});
 }
 
+const saleItemEditor=document.querySelector('[data-sale-item-editor]');
+if(saleItemEditor){
+    const product=saleItemEditor.querySelector('[data-sale-product]');
+    const custom=saleItemEditor.querySelector('[data-sale-custom-name]');
+    const customInput=custom.querySelector('input');
+    const refresh=()=>{const generic=product.value==='other';custom.hidden=!generic;customInput.required=generic;};
+    product.addEventListener('change',refresh);
+    refresh();
+}
+
 const creditReceiptModal=document.querySelector('[data-credit-receipt-modal]');
 if(creditReceiptModal){
     const form=creditReceiptModal.querySelector('[data-credit-receipt-form]');
