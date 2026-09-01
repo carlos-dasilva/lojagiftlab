@@ -1,0 +1,147 @@
+.credit-form form {
+    grid-template-columns: 1fr;
+}
+
+.credit-items-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.credit-items-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.credit-items-heading > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.credit-items-heading small {
+    color: var(--muted);
+}
+
+.credit-item-list {
+    display: grid;
+    gap: 12px;
+}
+
+.credit-item-row {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: var(--paper);
+}
+
+.credit-item-row label {
+    margin: 0;
+}
+
+.credit-item-values {
+    display: grid;
+    grid-template-columns: minmax(0, 110px) minmax(0, 1fr);
+    gap: 12px;
+}
+
+.remove-credit-item {
+    width: fit-content;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--coral);
+    font-weight: 750;
+}
+
+.credit-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.credit-item-summary {
+    display: grid;
+    gap: 3px;
+    margin: 10px 0 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--paper);
+    color: var(--muted);
+    font-size: 12px;
+    list-style: none;
+}
+
+.credit-actions > a,
+.credit-actions > button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--purple);
+    font-weight: 800;
+}
+
+.credit-receipt-layer {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: #07102e99;
+    backdrop-filter: blur(4px);
+}
+
+.credit-receipt-layer[hidden] {
+    display: none;
+}
+
+.credit-receipt-layer > section {
+    width: min(460px, 100%);
+    padding: 25px;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 25px 70px #07102e40;
+}
+
+.credit-receipt-layer h2 {
+    margin: 0 0 8px;
+}
+
+.credit-receipt-layer p {
+    color: var(--muted);
+}
+
+.credit-receipt-layer form > div {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+@media (max-width: 560px) {
+    .credit-items-heading,
+    .credit-form-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .credit-item-values {
+        grid-template-columns: 1fr;
+    }
+
+    .credit-form-actions .btn,
+    .credit-items-heading .btn {
+        width: 100%;
+    }
+
+    .credit-receipt-layer form > div {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}

@@ -20,15 +20,15 @@ class FinanceController extends Controller
         $from = now()->startOfMonth();
         $to = now()->endOfMonth();
         $sales = Sale::whereBetween('sold_at', [$from, $to])->get();
-        $receivedCredits = CreditSale::whereBetween('received_at', [$from, $to])->get();
+        $receivedCredits = CreditSale::with('items')->whereBetween('received_at', [$from, $to])->get();
         $paid = Payable::whereBetween('paid_at', [$from, $to])->sum('amount');
 
         return view('admin.finance.index', [
             'income' => $sales->sum('net_total') + $receivedCredits->sum('net_total'),
             'expenses' => (float) $paid,
             'pending' => (float) Payable::whereNull('paid_at')->sum('amount'),
-            'salesCount' => $sales->sum('quantity') + CreditSale::whereBetween('sold_at', [$from, $to])->sum('quantity'),
-            'receivables' => CreditSale::whereNull('received_at')->get()->sum('net_total'),
+            'salesCount' => $sales->sum('quantity') + CreditSale::whereBetween('received_at', [$from, $to])->with('items')->get()->sum(fn (CreditSale $credit) => $credit->items->sum('quantity')),
+            'receivables' => CreditSale::with('items')->whereNull('received_at')->get()->sum('net_total'),
             'entries' => $this->entries($from, $to)->take(8),
         ]);
     }
@@ -73,47 +73,42 @@ class FinanceController extends Controller
 
     public function credits()
     {
-        return view('admin.finance.credits', [
-            'credits' => CreditSale::with(['product', 'channel'])->orderByRaw('received_at IS NOT NULL')->latest('sold_at')->latest()->paginate(20),
-            'products' => Product::orderBy('name')->get(),
-            'channels' => SalesChannel::where('active', true)->orderBy('name')->get(),
-            'pendingTotal' => CreditSale::whereNull('received_at')->get()->sum('net_total'),
-        ]);
+        return $this->creditsView();
+    }
+
+    public function editCredit(CreditSale $credit)
+    {
+        return $this->creditsView($credit->load('items'));
     }
 
     public function storeCredit(Request $request)
     {
-        $data = $request->validate([
-            'customer_name' => 'required|string|max:160',
-            'customer_contact' => 'nullable|string|max:160',
-            'product_id' => 'required|exists:products,id',
-            'sales_channel_id' => 'nullable|exists:sales_channels,id',
-            'quantity' => 'required|integer|min:1|max:99999',
-            'unit_price' => 'required|numeric|min:0.01|max:9999999999',
-            'shipping_income' => 'nullable|numeric|min:0|max:9999999999',
-            'fee' => 'nullable|numeric|min:0|max:9999999999',
-            'sold_at' => 'required|date',
-            'due_date' => 'nullable|date|after_or_equal:sold_at',
-            'delivered' => 'nullable|boolean',
-            'notes' => 'nullable|string|max:2000',
-        ], $this->messages(), ['customer_name' => 'cliente', 'customer_contact' => 'contato', 'product_id' => 'produto', 'sales_channel_id' => 'canal de venda', 'quantity' => 'quantidade', 'unit_price' => 'valor unitário', 'shipping_income' => 'frete', 'fee' => 'taxas', 'sold_at' => 'data da venda', 'due_date' => 'previsão de pagamento', 'notes' => 'observações']);
-
-        $product = Product::findOrFail($data['product_id']);
-        $data['product_name'] = $product->name;
-        $data['shipping_income'] = $data['shipping_income'] ?? 0;
-        $data['fee'] = $data['fee'] ?? 0;
-        $data['delivered_at'] = $request->boolean('delivered') ? now() : null;
-        unset($data['delivered']);
-        CreditSale::create($data);
+        $this->saveCredit($request);
 
         return back()->with('success', 'Venda fiada registrada. Ela entrará no caixa somente quando for marcada como recebida.');
     }
 
-    public function toggleCreditReceived(CreditSale $credit)
+    public function updateCredit(Request $request, CreditSale $credit)
     {
-        $credit->update(['received_at' => $credit->received_at ? null : now()]);
+        $this->saveCredit($request, $credit);
 
-        return back()->with('success', $credit->fresh()->received_at ? 'Pagamento recebido e adicionado ao extrato.' : 'Pagamento reaberto e removido do extrato.');
+        return redirect()->route('admin.finance.credits')->with('success', 'Venda fiada atualizada com sucesso.');
+    }
+
+    public function toggleCreditReceived(Request $request, CreditSale $credit)
+    {
+        if ($credit->received_at) {
+            $credit->update(['received_at' => null]);
+
+            return back()->with('success', 'Pagamento reaberto e removido do extrato e das vendas.');
+        }
+
+        $data = $request->validate([
+            'received_on' => 'required|date|after_or_equal:'.$credit->sold_at->toDateString().'|before_or_equal:'.now()->toDateString(),
+        ], ['required' => 'Confirme a data do recebimento.', 'date' => 'Informe uma data de recebimento válida.', 'after_or_equal' => 'O recebimento não pode ser anterior à venda.', 'before_or_equal' => 'O recebimento não pode estar no futuro.']);
+        $credit->update(['received_at' => Carbon::parse($data['received_on'])->setTime(12, 0)]);
+
+        return back()->with('success', 'Pagamento recebido e adicionado ao extrato e às vendas.');
     }
 
     public function toggleCreditDelivered(CreditSale $credit)
@@ -219,15 +214,89 @@ class FinanceController extends Controller
             'detail' => $payable->category ?: 'Conta paga',
             'amount' => (float) $payable->amount,
         ]);
-        $credits = CreditSale::with('channel')->whereBetween('received_at', [$from, $to])->get()->map(fn (CreditSale $credit) => [
+        $credits = CreditSale::with(['channel', 'items'])->whereBetween('received_at', [$from, $to])->get()->map(fn (CreditSale $credit) => [
             'date' => $credit->received_at,
             'type' => 'income',
-            'description' => $credit->quantity.'× '.$credit->product_name,
+            'description' => $credit->items->count().' '.($credit->items->count() === 1 ? 'item' : 'itens').' para '.$credit->customer_name,
             'detail' => 'Fiado recebido de '.$credit->customer_name,
             'amount' => $credit->net_total,
         ]);
 
         return $sales->concat($credits)->concat($expenses)->sortByDesc('date')->values();
+    }
+
+    private function creditsView(?CreditSale $editing = null)
+    {
+        return view('admin.finance.credits', [
+            'credits' => CreditSale::with(['items', 'channel'])->orderByRaw('received_at IS NOT NULL')->latest('sold_at')->latest()->paginate(20),
+            'products' => Product::orderBy('name')->get(),
+            'channels' => SalesChannel::where('active', true)->orderBy('name')->get(),
+            'pendingTotal' => CreditSale::with('items')->whereNull('received_at')->get()->sum('net_total'),
+            'editing' => $editing,
+        ]);
+    }
+
+    private function saveCredit(Request $request, ?CreditSale $credit = null): CreditSale
+    {
+        $data = $request->validate([
+            'customer_name' => 'required|string|max:160',
+            'customer_contact' => 'nullable|string|max:160',
+            'sales_channel_id' => 'nullable|exists:sales_channels,id',
+            'items' => 'required|array|min:1|max:50',
+            'items.*.product_id' => 'nullable|integer|exists:products,id',
+            'items.*.item_name' => 'nullable|required_without:items.*.product_id|string|max:160',
+            'items.*.quantity' => 'required|integer|min:1|max:99999',
+            'items.*.unit_price' => 'required|numeric|min:0.01|max:9999999999',
+            'shipping_income' => 'nullable|numeric|min:0|max:9999999999',
+            'fee' => 'nullable|numeric|min:0|max:9999999999',
+            'sold_at' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:sold_at',
+            'delivered' => 'nullable|boolean',
+            'notes' => 'nullable|string|max:2000',
+        ], $this->messages(), ['customer_name' => 'cliente', 'customer_contact' => 'contato', 'sales_channel_id' => 'canal de venda', 'items' => 'itens', 'items.*.product_id' => 'produto', 'items.*.item_name' => 'nome do item avulso', 'items.*.quantity' => 'quantidade', 'items.*.unit_price' => 'valor unitário', 'shipping_income' => 'frete', 'fee' => 'taxas', 'sold_at' => 'data da venda', 'due_date' => 'previsão de pagamento', 'notes' => 'observações']);
+
+        $products = Product::whereIn('id', collect($data['items'])->pluck('product_id')->filter())->get()->keyBy('id');
+        $items = collect($data['items'])->values()->map(function ($item, $order) use ($products) {
+            $product = filled($item['product_id'] ?? null) ? $products->get((int) $item['product_id']) : null;
+
+            return [
+                'product_id' => $product?->id,
+                'item_name' => $product?->name ?? trim($item['item_name']),
+                'quantity' => (int) $item['quantity'],
+                'unit_price' => $item['unit_price'],
+                'order' => $order,
+            ];
+        });
+        $first = $items->first();
+
+        return DB::transaction(function () use ($data, $items, $first, $request, $credit) {
+            $header = [
+                'product_id' => $first['product_id'],
+                'product_name' => $first['item_name'],
+                'quantity' => $first['quantity'],
+                'unit_price' => $first['unit_price'],
+                'customer_name' => $data['customer_name'],
+                'customer_contact' => $data['customer_contact'] ?? null,
+                'sales_channel_id' => $data['sales_channel_id'] ?? null,
+                'shipping_income' => $data['shipping_income'] ?? 0,
+                'fee' => $data['fee'] ?? 0,
+                'sold_at' => $data['sold_at'],
+                'due_date' => $data['due_date'] ?? null,
+                'delivered_at' => $request->boolean('delivered') ? ($credit?->delivered_at ?? now()) : null,
+                'notes' => $data['notes'] ?? null,
+            ];
+
+            if ($credit) {
+                $credit->update($header);
+                $credit->items()->delete();
+            } else {
+                $credit = CreditSale::create($header);
+            }
+
+            $credit->items()->createMany($items->all());
+
+            return $credit;
+        });
     }
 
     private function messages(): array

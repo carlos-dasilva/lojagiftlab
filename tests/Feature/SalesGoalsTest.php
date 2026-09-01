@@ -83,7 +83,7 @@ class SalesGoalsTest extends TestCase
             ->assertSee('Em andamento');
     }
 
-    public function test_credit_sale_counts_toward_sales_goal_even_before_payment(): void
+    public function test_credit_sale_counts_toward_sales_goal_only_after_payment_on_received_date(): void
     {
         Carbon::setTestNow('2026-08-31 10:00:00');
         $admin = $this->admin();
@@ -93,6 +93,12 @@ class SalesGoalsTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.finance.goals', ['type' => 'weekly']))
             ->assertOk()
+            ->assertSee('Em andamento')
+            ->assertSee('R$ 0,00');
+
+        $credit = CreditSale::firstOrFail();
+        $this->actingAs($admin)->patch(route('admin.finance.credits.received', $credit), ['received_on' => now()->toDateString()]);
+        $this->actingAs($admin)->get(route('admin.finance.goals', ['type' => 'weekly']))
             ->assertSee('Meta atingida')
             ->assertSee('R$ 120,00');
     }

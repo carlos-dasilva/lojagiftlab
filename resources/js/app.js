@@ -142,3 +142,24 @@ imagesManager?.addEventListener('click',async event=>{
         window.GiftLabModal({type:'error',title:'Não foi possível alterar a imagem',message:'Atualize a página e tente novamente.'});
     }
 });
+
+const creditEditor=document.querySelector('[data-credit-editor]');
+if(creditEditor){
+    const list=creditEditor.querySelector('[data-credit-item-list]');
+    const template=creditEditor.querySelector('[data-credit-item-template]');
+    const toggleCustomName=row=>{const select=row.querySelector('[data-credit-product]');const custom=row.querySelector('[data-credit-custom-name]');const input=custom?.querySelector('input');const isCustom=!select?.value;custom.hidden=!isCustom;if(input)input.required=isCustom;};
+    creditEditor.querySelectorAll('[data-credit-item-row]').forEach(toggleCustomName);
+    creditEditor.addEventListener('change',event=>{if(event.target.matches('[data-credit-product]'))toggleCustomName(event.target.closest('[data-credit-item-row]'));});
+    creditEditor.querySelector('[data-add-credit-item]')?.addEventListener('click',()=>{const key=`new_${Date.now()}`;const wrapper=document.createElement('div');wrapper.innerHTML=template.innerHTML.replaceAll('__NAME__',`items[${key}]`);const row=wrapper.firstElementChild;list.appendChild(row);toggleCustomName(row);row.querySelector('select').focus();});
+    creditEditor.addEventListener('click',event=>{const remove=event.target.closest('[data-remove-credit-item]');if(!remove)return;if(list.querySelectorAll('[data-credit-item-row]').length===1){window.GiftLabModal({type:'info',title:'A venda precisa de um item',message:'Adicione outro item antes de remover este.'});return;}remove.closest('[data-credit-item-row]').remove();});
+}
+
+const creditReceiptModal=document.querySelector('[data-credit-receipt-modal]');
+if(creditReceiptModal){
+    const form=creditReceiptModal.querySelector('[data-credit-receipt-form]');
+    const close=()=>{creditReceiptModal.hidden=true;document.body.style.overflow='';};
+    document.addEventListener('click',event=>{const button=event.target.closest('[data-receive-credit]');if(!button)return;form.action=button.dataset.url;form.querySelector('[name="received_on"]').min=button.dataset.saleDate;creditReceiptModal.querySelector('[data-credit-receipt-customer]').textContent=button.dataset.customer;creditReceiptModal.hidden=false;document.body.style.overflow='hidden';form.querySelector('[name="received_on"]').focus();});
+    creditReceiptModal.querySelector('[data-close-credit-receipt]').addEventListener('click',close);
+    creditReceiptModal.addEventListener('click',event=>{if(event.target===creditReceiptModal)close();});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!creditReceiptModal.hidden)close();});
+}

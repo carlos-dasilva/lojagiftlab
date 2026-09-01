@@ -20,9 +20,16 @@ class CreditSale extends Model
         return $this->belongsTo(SalesChannel::class, 'sales_channel_id');
     }
 
+    public function items()
+    {
+        return $this->hasMany(CreditSaleItem::class)->orderBy('order');
+    }
+
     public function getGrossTotalAttribute(): float
     {
-        return (float) $this->unit_price * $this->quantity;
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+
+        return $items->isNotEmpty() ? (float) $items->sum('total') : (float) $this->unit_price * $this->quantity;
     }
 
     public function getNetTotalAttribute(): float

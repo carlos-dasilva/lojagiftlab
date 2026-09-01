@@ -41,6 +41,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/financeiro/vendas/{sale}', [FinanceController::class, 'destroySale'])->name('finance.sales.destroy');
     Route::get('/financeiro/fiados', [FinanceController::class, 'credits'])->name('finance.credits');
     Route::post('/financeiro/fiados', [FinanceController::class, 'storeCredit'])->name('finance.credits.store');
+    Route::get('/financeiro/fiados/{credit}/editar', [FinanceController::class, 'editCredit'])->name('finance.credits.edit');
+    Route::put('/financeiro/fiados/{credit}', [FinanceController::class, 'updateCredit'])->name('finance.credits.update');
     Route::patch('/financeiro/fiados/{credit}/recebimento', [FinanceController::class, 'toggleCreditReceived'])->name('finance.credits.received');
     Route::patch('/financeiro/fiados/{credit}/entrega', [FinanceController::class, 'toggleCreditDelivered'])->name('finance.credits.delivered');
     Route::delete('/financeiro/fiados/{credit}', [FinanceController::class, 'destroyCredit'])->name('finance.credits.destroy');

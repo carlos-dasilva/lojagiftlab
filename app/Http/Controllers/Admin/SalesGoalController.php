@@ -22,12 +22,13 @@ class SalesGoalController extends Controller
         $offset = ($page - 1) * $perPage;
         $periods = $this->periods($type, $offset, min($perPage, $totalPeriods - $offset));
         $goals = SalesGoal::where('period_type', $type)->orderBy('effective_from')->get();
-        $sales = Sale::whereBetween('sold_at', [$periods->last()['start'], $periods->first()['end']])->get()
-            ->concat(CreditSale::whereBetween('sold_at', [$periods->last()['start'], $periods->first()['end']])->get());
+        $sales = Sale::whereBetween('sold_at', [$periods->last()['start'], $periods->first()['end']])->get();
+        $receivedCredits = CreditSale::with('items')->whereBetween('received_at', [$periods->last()['start'], $periods->first()['end']])->get();
 
-        $evaluations = $periods->map(function ($period, $index) use ($goals, $sales, $page) {
+        $evaluations = $periods->map(function ($period, $index) use ($goals, $sales, $receivedCredits, $page) {
             $goal = $goals->last(fn (SalesGoal $goal) => $goal->effective_from->lte($period['start']));
-            $actual = (float) $sales->filter(fn ($sale) => $sale->sold_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total');
+            $actual = (float) $sales->filter(fn ($sale) => $sale->sold_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total')
+                + (float) $receivedCredits->filter(fn (CreditSale $credit) => $credit->received_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total');
             $target = $goal ? (float) $goal->target_amount : null;
             $difference = $target === null ? null : $actual - $target;
             $current = $index === 0 && $page === 1;
@@ -114,7 +115,7 @@ class SalesGoalController extends Controller
     {
         $firstSale = Sale::min('sold_at');
         $firstGoal = SalesGoal::where('period_type', $type)->min('effective_from');
-        $firstCredit = CreditSale::min('sold_at');
+        $firstCredit = CreditSale::whereNotNull('received_at')->min('received_at');
         $firstDate = collect([$firstSale, $firstCredit, $firstGoal])->filter()->min();
 
         if (! $firstDate) {
