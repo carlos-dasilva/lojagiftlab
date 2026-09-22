@@ -1,5 +1,6 @@
 @extends('layouts.app')
-@section('title', $favoritesMode ? 'Meus favoritos — Gift Lab' : 'Produtos — Gift Lab')
+@section('title', $favoritesMode ? 'Meus favoritos — Gift Lab' : (isset($currentCategory) ? $currentCategory->name.' — Gift Lab' : 'Produtos — Gift Lab'))
+@section('description', $currentCategory?->description ?: $siteSettings['seo_description'])
 @section('content')
 <section class="page-hero compact">
     <div class="container">
@@ -15,6 +16,9 @@
             @if ($favoritesMode)<input type="hidden" name="favorites" value="{{ request('favorites') }}">@endif
             <label>Buscar<input name="q" value="{{ request('q') }}" placeholder="Nome, categoria ou tag"></label>
             <label>Categoria<select name="category"><option value="">Todas</option>@foreach ($categories as $category)<option value="{{ $category->slug }}" @selected(request('category') === $category->slug)>{{ $category->name }}</option>@endforeach</select></label>
+            <label>Preço mínimo<input type="number" name="min_price" min="0" step="0.01" value="{{ request('min_price') }}"></label>
+            <label>Preço máximo<input type="number" name="max_price" min="0" step="0.01" value="{{ request('max_price') }}"></label>
+            <label>Condição<select name="condition"><option value="">Todas</option>@foreach(['new'=>'Novo','used'=>'Usado','like_new'=>'Seminovo','custom'=>'Personalizado'] as $value=>$label)<option value="{{ $value }}" @selected(request('condition')===$value)>{{ $label }}</option>@endforeach</select></label>
             <label>Ordenar<select name="sort"><option value="recent">Mais recentes</option><option value="price_asc" @selected(request('sort') === 'price_asc')>Menor preço</option><option value="price_desc" @selected(request('sort') === 'price_desc')>Maior preço</option><option value="views" @selected(request('sort') === 'views')>Mais visualizados</option></select></label>
             <label class="check"><input type="checkbox" name="promotion" value="1" @checked(request('promotion'))> Em promoção</label>
             <label class="check"><input type="checkbox" name="available" value="1" @checked(request('available'))> Disponíveis</label>

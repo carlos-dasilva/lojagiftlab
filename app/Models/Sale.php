@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
@@ -22,11 +23,21 @@ class Sale extends Model
 
     public function getNetTotalAttribute(): float
     {
-        return ((float) $this->unit_price * $this->quantity) + (float) $this->shipping_income - (float) $this->fee;
+        return $this->net_total_cents / 100;
     }
 
     public function getGrossTotalAttribute(): float
     {
-        return (float) $this->unit_price * $this->quantity;
+        return $this->gross_total_cents / 100;
+    }
+
+    public function getGrossTotalCentsAttribute(): int
+    {
+        return Money::cents($this->unit_price) * $this->quantity;
+    }
+
+    public function getNetTotalCentsAttribute(): int
+    {
+        return $this->gross_total_cents + Money::cents($this->shipping_income) - Money::cents($this->fee);
     }
 }

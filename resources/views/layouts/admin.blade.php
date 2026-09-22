@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin') — Gift Lab</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" href="{{ ($siteSettings['favicon'] ? Storage::url($siteSettings['favicon']) : asset('favicon.svg')) }}">
     <meta name="theme-color" content="#0B163D">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="admin-body">
     <aside class="admin-sidebar" data-admin-sidebar>
         <div class="admin-brand-row">
-            <a href="{{ route('admin.dashboard') }}"><img src="{{ asset('images/gift-lab-logo.png') }}" alt="Gift Lab"><span>Administração</span></a>
+            <a href="{{ route('admin.dashboard') }}"><img src="{{ ($siteSettings['logo'] ? Storage::url($siteSettings['logo']) : asset('images/gift-lab-logo.png')) }}" alt="Gift Lab"><span>Administração</span></a>
             <button class="admin-menu-button" type="button" data-admin-menu-toggle aria-expanded="false" aria-controls="admin-navigation" aria-label="Abrir menu administrativo"><span></span><span></span><span></span></button>
         </div>
         <div class="admin-mobile-menu" id="admin-navigation" data-admin-mobile-menu>
@@ -22,6 +22,7 @@
             <a href="{{ route('admin.bundles.index') }}">▦ Conjuntos</a>
             <a href="{{ route('admin.categories.index') }}">⌁ Categorias</a>
             <a href="{{ route('admin.finance.index') }}">$ Financeiro</a>
+            <a href="{{ route('admin.content.index', 'paginas') }}">▤ Conteúdo</a>
             <a href="{{ route('admin.settings.edit') }}">⚙ Configurações</a>
             <a href="{{ route('home') }}">↗ Ver site</a>
         </nav>

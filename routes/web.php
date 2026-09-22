@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Admin\BundleController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FinanceController;
+use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SalesGoalController;
 use App\Http\Controllers\Admin\SettingController;
@@ -14,12 +16,19 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ShippingController;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/produtos', [CatalogController::class, 'index'])->name('catalog');
 Route::get('/produto/{product}', [CatalogController::class, 'show'])
-    ->missing(fn () => response()->view('errors.product-not-found', [], 404))
+    ->missing(function (Request $request) {
+        $id = DB::table('product_redirects')->where('slug', $request->route('product'))->value('product_id');
+        $product = $id ? Product::published()->find($id) : null;
+
+        return $product ? redirect()->route('products.show', $product, 301) : response()->view('errors.product-not-found', [], 404);
+    })
     ->name('products.show');
 Route::post('/produto/{product}/frete', ShippingController::class)->middleware('throttle:10,1')->name('products.shipping');
 Route::get('/categoria/{category}', [CatalogController::class, 'category'])->name('categories.show');
@@ -34,6 +43,17 @@ Route::middleware('guest')->group(function () {
     Route::post('/admin/login', [AuthController::class, 'store'])->middleware('throttle:5,1')->name('admin.login.store');
 });
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+    Route::get('/mensagens', [MessageController::class, 'index'])->name('messages.index');
+    Route::patch('/mensagens/{message}/lida', [MessageController::class, 'read'])->name('messages.read');
+    Route::delete('/mensagens/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
+    Route::prefix('conteudo/{section}')->where(['section' => 'faq|canais|banners|paginas'])->group(function () {
+        Route::get('/', [ContentController::class, 'index'])->name('content.index');
+        Route::get('/novo', [ContentController::class, 'edit'])->name('content.create');
+        Route::post('/', [ContentController::class, 'save'])->name('content.store');
+        Route::get('/{record}/editar', [ContentController::class, 'edit'])->whereNumber('record')->name('content.edit');
+        Route::put('/{record}', [ContentController::class, 'save'])->whereNumber('record')->name('content.update');
+        Route::delete('/{record}', [ContentController::class, 'destroy'])->whereNumber('record')->name('content.destroy');
+    });
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/financeiro', [FinanceController::class, 'index'])->name('finance.index');
     Route::get('/financeiro/vendas', [FinanceController::class, 'sales'])->name('finance.sales');
@@ -63,6 +83,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/products/{product}/images/{image}', [ProductController::class, 'destroyImage'])->name('products.images.destroy');
     Route::get('/categorias', [CategoryController::class, 'index'])->name('categories.index');
     Route::post('/categorias', [CategoryController::class, 'store'])->name('categories.store');
+    Route::get('/categorias/{category}/editar', [CategoryController::class, 'edit'])->name('categories.edit');
+    Route::put('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categorias/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
     Route::get('/configuracoes', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('/configuracoes', [SettingController::class, 'update'])->name('settings.update');

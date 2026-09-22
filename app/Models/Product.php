@@ -49,7 +49,12 @@ class Product extends Model
 
     public function salesLinks()
     {
-        return $this->hasMany(ProductSalesLink::class)->where('active', true)->orderBy('order');
+        return $this->allSalesLinks()->where('active', true)->whereHas('channel', fn ($query) => $query->where('active', true));
+    }
+
+    public function allSalesLinks()
+    {
+        return $this->hasMany(ProductSalesLink::class)->orderBy('order');
     }
 
     public function videos()
@@ -96,18 +101,31 @@ class Product extends Model
         return $query->where('status', ProductStatus::Published);
     }
 
-    public function scopeSearch(Builder $query, ?string $term): Builder
+    public function scopePromoted(Builder $query): Builder
     {
-        return $query->when($term, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', "%{$term}%")->orWhere('short_description', 'like', "%{$term}%")->orWhereHas('categories', fn ($q) => $q->where('name', 'like', "%{$term}%"))->orWhereHas('tags', fn ($q) => $q->where('name', 'like', "%{$term}%"))));
+        return $query->whereHas('salesLinks', fn ($links) => $links->whereColumn('original_price', '>', 'price'));
     }
 
-    public function getFinalPriceAttribute(): string
+    public function scopeSearch(Builder $query, ?string $term): Builder
     {
+        return $query->when($term, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', "%{$term}%")->orWhere('short_description', 'like', "%{$term}%")->orWhere('description', 'like', "%{$term}%")->orWhereHas('categories', fn ($q) => $q->where('active', true)->where('name', 'like', "%{$term}%"))->orWhereHas('tags', fn ($q) => $q->where('name', 'like', "%{$term}%"))));
+    }
+
+    public function getFinalPriceAttribute(): ?string
+    {
+        if ($this->sale_price === null) {
+            return null;
+        }
+
         return bcsub((string) $this->sale_price, bcmul((string) $this->sale_price, bcdiv((string) $this->discount_percentage, '100', 4), 4), 2);
     }
 
-    public function getProfitAttribute(): string
+    public function getProfitAttribute(): ?string
     {
+        if ($this->final_price === null) {
+            return null;
+        }
+
         return bcsub($this->final_price, (string) $this->cost_price, 2);
     }
 

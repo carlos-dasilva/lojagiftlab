@@ -8,6 +8,8 @@ use App\Models\Payable;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SalesChannel;
+use App\Services\FinanceBalanceService;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,20 +17,22 @@ use Illuminate\Support\Str;
 
 class FinanceController extends Controller
 {
-    public function index()
+    public function index(FinanceBalanceService $balanceService)
     {
         $from = now()->startOfMonth();
         $to = now()->endOfMonth();
         $sales = Sale::whereBetween('sold_at', [$from, $to])->get();
         $receivedCredits = CreditSale::with('items')->whereBetween('received_at', [$from, $to])->get();
         $paid = Payable::whereBetween('paid_at', [$from, $to])->sum('amount');
+        $totals = $balanceService->totals();
 
         return view('admin.finance.index', [
-            'income' => $sales->sum('net_total') + $receivedCredits->sum('net_total'),
+            'income' => ($sales->sum('net_total_cents') + $receivedCredits->sum('net_total_cents')) / 100,
             'expenses' => (float) $paid,
-            'pending' => (float) Payable::whereNull('paid_at')->sum('amount'),
-            'salesCount' => $sales->sum('quantity') + CreditSale::whereBetween('received_at', [$from, $to])->with('items')->get()->sum(fn (CreditSale $credit) => $credit->items->sum('quantity')),
-            'receivables' => CreditSale::with('items')->whereNull('received_at')->get()->sum('net_total'),
+            'balance' => $totals['balance_cents'] / 100,
+            'pending' => $totals['pending_cents'] / 100,
+            'salesCount' => $sales->sum('quantity') + $receivedCredits->sum(fn (CreditSale $credit) => $credit->items->isNotEmpty() ? $credit->items->sum('quantity') : $credit->quantity),
+            'receivables' => CreditSale::with('items')->whereNull('received_at')->get()->sum('net_total_cents') / 100,
             'entries' => $this->entries($from, $to)->take(8),
         ]);
     }
@@ -201,8 +205,8 @@ class FinanceController extends Controller
             'entries' => $entries,
             'from' => $from,
             'to' => $to,
-            'income' => $entries->where('type', 'income')->sum('amount'),
-            'expenses' => $entries->where('type', 'expense')->sum('amount'),
+            'income' => $entries->where('type', 'income')->sum('amount_cents') / 100,
+            'expenses' => $entries->where('type', 'expense')->sum('amount_cents') / 100,
         ]);
     }
 
@@ -214,6 +218,7 @@ class FinanceController extends Controller
             'description' => $sale->quantity.'× '.$sale->product_name,
             'detail' => $sale->channel?->name ?: 'Venda direta',
             'amount' => $sale->net_total,
+            'amount_cents' => $sale->net_total_cents,
         ]);
         $expenses = Payable::whereNotNull('paid_at')->whereBetween('paid_at', [$from, $to])->get()->map(fn (Payable $payable) => [
             'date' => $payable->paid_at,
@@ -221,6 +226,7 @@ class FinanceController extends Controller
             'description' => $payable->description,
             'detail' => $payable->category ?: 'Conta paga',
             'amount' => (float) $payable->amount,
+            'amount_cents' => Money::cents($payable->amount),
         ]);
         $credits = CreditSale::with(['channel', 'items'])->whereBetween('received_at', [$from, $to])->get()->map(fn (CreditSale $credit) => [
             'date' => $credit->received_at,
@@ -228,6 +234,7 @@ class FinanceController extends Controller
             'description' => $credit->items->count().' '.($credit->items->count() === 1 ? 'item' : 'itens').' para '.$credit->customer_name,
             'detail' => 'Fiado recebido de '.$credit->customer_name,
             'amount' => $credit->net_total,
+            'amount_cents' => $credit->net_total_cents,
         ]);
 
         return $sales->concat($credits)->concat($expenses)->sortByDesc('date')->values();
@@ -239,7 +246,7 @@ class FinanceController extends Controller
             'credits' => CreditSale::with(['items', 'channel'])->orderByRaw('received_at IS NOT NULL')->latest('sold_at')->latest()->paginate(20),
             'products' => Product::orderBy('name')->get(),
             'channels' => SalesChannel::where('active', true)->orderBy('name')->get(),
-            'pendingTotal' => CreditSale::with('items')->whereNull('received_at')->get()->sum('net_total'),
+            'pendingTotal' => CreditSale::with('items')->whereNull('received_at')->get()->sum('net_total_cents') / 100,
             'editing' => $editing,
         ]);
     }
@@ -257,7 +264,7 @@ class FinanceController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0.01|max:9999999999',
             'shipping_income' => 'nullable|numeric|min:0|max:9999999999',
             'fee' => 'nullable|numeric|min:0|max:9999999999',
-            'sold_at' => 'required|date',
+            'sold_at' => ['required', 'date', ...($credit?->received_at ? ['before_or_equal:'.$credit->received_at->toDateString()] : [])],
             'due_date' => 'nullable|date|after_or_equal:sold_at',
             'delivered' => 'nullable|boolean',
             'notes' => 'nullable|string|max:2000',
@@ -309,6 +316,6 @@ class FinanceController extends Controller
 
     private function messages(): array
     {
-        return ['required' => 'O campo :attribute é obrigatório.', 'required_if' => 'O campo :attribute é obrigatório para esta opção.', 'numeric' => 'Informe um valor válido em :attribute.', 'integer' => 'O campo :attribute deve ser um número inteiro.', 'min' => 'O campo :attribute deve ser no mínimo :min.', 'max' => 'O campo :attribute ultrapassou o limite permitido.', 'date' => 'Informe uma data válida em :attribute.', 'after_or_equal' => 'O campo :attribute não pode ser anterior à data da venda.', 'exists' => 'A opção escolhida em :attribute não é válida.'];
+        return ['required' => 'O campo :attribute é obrigatório.', 'required_if' => 'O campo :attribute é obrigatório para esta opção.', 'numeric' => 'Informe um valor válido em :attribute.', 'integer' => 'O campo :attribute deve ser um número inteiro.', 'min' => 'O campo :attribute deve ser no mínimo :min.', 'max' => 'O campo :attribute ultrapassou o limite permitido.', 'date' => 'Informe uma data válida em :attribute.', 'before_or_equal' => 'A data da venda não pode ser posterior ao recebimento já registrado.', 'after_or_equal' => 'O campo :attribute não pode ser anterior à data da venda.', 'exists' => 'A opção escolhida em :attribute não é válida.'];
     }
 }

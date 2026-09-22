@@ -2,7 +2,13 @@
 @section('title', 'Financeiro')
 @section('heading', 'Financeiro')
 @section('content')
-@include('admin.finance.nav')
+<div class="finance-overview-header">
+    @include('admin.finance.nav')
+    <section class="finance-current" aria-label="Totais acumulados da loja">
+        <article><span>Saldo atual da loja</span><strong class="{{ $balance < 0 ? 'money-out' : 'money-in' }}">R$ {{ number_format($balance, 2, ',', '.') }}</strong><small>Recebido menos pago · todo o período</small></article>
+        <article><span>Total a pagar</span><strong>R$ {{ number_format($pending, 2, ',', '.') }}</strong><small>Todas as contas ainda não pagas</small></article>
+    </section>
+</div>
 <div class="finance-stats">
     <article><span>Entradas no mês</span><strong class="money-in">R$ {{ number_format($income, 2, ',', '.') }}</strong></article>
     <article><span>Saídas no mês</span><strong class="money-out">R$ {{ number_format($expenses, 2, ',', '.') }}</strong></article>

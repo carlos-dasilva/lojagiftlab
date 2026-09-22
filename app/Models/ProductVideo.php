@@ -33,8 +33,24 @@ class ProductVideo extends Model
         if (! $url) {
             return null;
         }
-        preg_match('~(?:youtu\.be/|youtube(?:-nocookie)?\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/))([A-Za-z0-9_-]{11})~i', $url, $matches);
+        $parts = parse_url($url);
+        if (! $parts || ! in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)) {
+            return null;
+        }
+        $host = strtolower($parts['host'] ?? '');
+        $path = $parts['path'] ?? '';
+        $id = null;
+        if ($host === 'youtu.be') {
+            $id = trim($path, '/');
+        } elseif (in_array($host, ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com'], true)) {
+            if ($path === '/watch') {
+                parse_str($parts['query'] ?? '', $query);
+                $id = $query['v'] ?? null;
+            } elseif (preg_match('~^/(?:embed|shorts)/([^/]+)/?$~', $path, $matches)) {
+                $id = $matches[1];
+            }
+        }
 
-        return $matches[1] ?? null;
+        return is_string($id) && preg_match('/^[A-Za-z0-9_-]{11}$/', $id) ? $id : null;
     }
 }

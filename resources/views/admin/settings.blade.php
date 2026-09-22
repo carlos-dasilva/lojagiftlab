@@ -1,1 +1,20 @@
-@extends('layouts.admin') @section('title','Configurações') @section('heading','Configurações') @section('content')<form method="post" action="{{ route('admin.settings.update') }}" class="admin-form">@csrf @method('put')<section class="admin-card"><span class="kicker">Identidade</span><h2>Marca e contato</h2><div class="form-grid"><label>Nome público<input name="site_name" value="{{ old('site_name',$siteSettings['name']) }}" required></label><label>E-mail<input type="email" name="site_email" value="{{ old('site_email',$siteSettings['email']) }}" required></label><label>Cor principal<input type="color" name="primary_color" value="{{ old('primary_color',$siteSettings['primary_color']) }}" required></label><label>Instagram<input type="url" name="instagram" value="{{ old('instagram',$siteSettings['instagram']) }}" placeholder="https://instagram.com/..."></label><label>WhatsApp<input name="whatsapp" value="{{ old('whatsapp',$siteSettings['whatsapp']) }}"></label></div></section><section class="admin-card"><span class="kicker">Home</span><h2>Mensagem principal</h2><div class="form-grid"><label class="span-2">Título do hero<input name="hero_title" value="{{ old('hero_title',$siteSettings['hero_title']) }}" required></label><label class="span-2">Subtítulo<textarea name="hero_subtitle" rows="3">{{ old('hero_subtitle',$siteSettings['hero_subtitle']) }}</textarea></label></div></section><div class="sticky-actions"><button class="btn primary">Salvar configurações</button></div></form>@endsection
+@extends('layouts.admin')
+@section('title','Configurações')
+@section('heading','Configurações')
+@section('content')
+<nav class="settings-tabs" aria-label="Seções das configurações">@foreach($groups as $group=>[$label,$fields])<a href="#settings-{{ $group }}">{{ $label }}</a>@endforeach</nav>
+<form method="post" enctype="multipart/form-data" action="{{ route('admin.settings.update') }}">@csrf @method('put')
+@foreach($groups as $group=>[$label,$fields])
+<section id="settings-{{ $group }}" class="admin-card settings-section"><h2>{{ $label }}</h2><div class="form-grid">
+@foreach($fields as $key=>[$fieldLabel,$type,$default])
+<label @class(['span-2'=>$type==='textarea','check'=>$type==='checkbox'])><span>{{ $fieldLabel }}</span>
+@if($type==='textarea')<textarea name="{{ $key }}" rows="3">{{ old($key,$values[$key]) }}</textarea>
+@elseif($type==='checkbox')<input type="hidden" name="{{ $key }}" value="0"><input type="checkbox" name="{{ $key }}" value="1" @checked(old($key,$values[$key])==='1')>
+@elseif($type==='file')<input type="file" name="{{ $key }}" accept="image/png,image/jpeg,image/webp">@if($values[$key])<img class="content-preview" src="{{ Storage::url($values[$key]) }}" alt="Imagem atual">@endif
+@else<input type="{{ $type }}" name="{{ $key }}" value="{{ old($key,$values[$key]) }}" @required(in_array($key,['site_name','site_email','hero_title']))>
+@endif @error($key)<small class="field-error">{{ $message }}</small>@enderror</label>
+@endforeach</div></section>
+@endforeach
+<div class="sticky-actions"><button class="btn primary">Salvar configurações</button></div>
+</form>
+@endsection

@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import './finance-balance.css';
+@import './content-admin.css';
 @import './modal.css';
 @import './mobile-fixes.css';
 @import './category-system.css';

@@ -27,8 +27,9 @@ class SalesGoalController extends Controller
 
         $evaluations = $periods->map(function ($period, $index) use ($goals, $sales, $receivedCredits, $page) {
             $goal = $goals->last(fn (SalesGoal $goal) => $goal->effective_from->lte($period['start']));
-            $actual = (float) $sales->filter(fn ($sale) => $sale->sold_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total')
-                + (float) $receivedCredits->filter(fn (CreditSale $credit) => $credit->received_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total');
+            $actual = (float) $sales->filter(fn ($sale) => $sale->sold_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total_cents')
+                + (float) $receivedCredits->filter(fn (CreditSale $credit) => $credit->received_at->betweenIncluded($period['start'], $period['end']))->sum('gross_total_cents');
+            $actual /= 100;
             $target = $goal ? (float) $goal->target_amount : null;
             $difference = $target === null ? null : $actual - $target;
             $current = $index === 0 && $page === 1;

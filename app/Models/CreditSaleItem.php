@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 
 class CreditSaleItem extends Model
@@ -22,6 +23,11 @@ class CreditSaleItem extends Model
 
     public function getTotalAttribute(): float
     {
-        return (float) $this->unit_price * $this->quantity;
+        return $this->total_cents / 100;
+    }
+
+    public function getTotalCentsAttribute(): int
+    {
+        return Money::cents($this->unit_price) * $this->quantity;
     }
 }

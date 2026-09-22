@@ -22,16 +22,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        View::composer('*', function ($view) {
-            $view->with('siteSettings', [
-                'name' => Setting::value('site_name', 'Gift Lab'),
-                'email' => Setting::value('site_email', 'lojagiftlab@gmail.com'),
-                'hero_title' => Setting::value('hero_title', 'Presentes, criatividade e coisas incríveis ganhando forma.'),
-                'hero_subtitle' => Setting::value('hero_subtitle', 'Ideias especiais, itens geek e presentes únicos escolhidos para surpreender.'),
-                'instagram' => Setting::value('instagram'), 'whatsapp' => Setting::value('whatsapp'),
-                'primary_color' => Setting::value('primary_color', '#0B163D'),
-            ]);
-            $view->with('navCategories', Category::where('active', true)->whereNull('parent_id')->orderBy('order')->take(8)->get());
+        View::composer(['layouts.app', 'layouts.admin', 'admin.login', 'home', 'pages.*', 'catalog.*', 'errors.*'], function ($view) {
+            $values = request()->attributes->get('giftlab.settings');
+            if ($values === null) {
+                $values = Setting::allValues();
+                $values['name'] = $values['site_name'];
+                $values['email'] = $values['site_email'];
+                request()->attributes->set('giftlab.settings', $values);
+            }
+            $view->with('siteSettings', $values);
+            if ($view->name() === 'layouts.app') {
+                $view->with('navCategories', Category::where('active', true)->whereNull('parent_id')->orderBy('order')->take(8)->get());
+            }
         });
     }
 }

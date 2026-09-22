@@ -1,0 +1,1 @@
+@if($items->isNotEmpty())<section class="section container"><div class="section-heading"><h2>{{ $title }}</h2><a href="{{ route('catalog') }}">Ver produtos →</a></div><div class="products-grid">@foreach($items as $product)<x-product-card :product="$product"/>@endforeach</div></section>@endif

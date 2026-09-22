@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 
 class CreditSale extends Model
@@ -27,14 +28,24 @@ class CreditSale extends Model
 
     public function getGrossTotalAttribute(): float
     {
+        return $this->gross_total_cents / 100;
+    }
+
+    public function getGrossTotalCentsAttribute(): int
+    {
         $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
 
-        return $items->isNotEmpty() ? (float) $items->sum('total') : (float) $this->unit_price * $this->quantity;
+        return $items->isNotEmpty() ? (int) $items->sum('total_cents') : Money::cents($this->unit_price) * $this->quantity;
     }
 
     public function getNetTotalAttribute(): float
     {
-        return $this->gross_total + (float) $this->shipping_income - (float) $this->fee;
+        return $this->net_total_cents / 100;
+    }
+
+    public function getNetTotalCentsAttribute(): int
+    {
+        return $this->gross_total_cents + Money::cents($this->shipping_income) - Money::cents($this->fee);
     }
 
     public function getIsReceivedAttribute(): bool

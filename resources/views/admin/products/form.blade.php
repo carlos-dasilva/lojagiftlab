@@ -88,7 +88,7 @@
                 <article class="product-image-item @if ($image->is_primary) is-primary @endif" data-image-item>
                     <img src="{{ Storage::url($image->path) }}" alt="{{ $image->alt ?: $product->name }}">
                     @if ($image->is_primary)<span class="cover-badge">Capa atual</span>@endif
-                    <div>
+                    <label>Ordem<input type="number" name="image_order[{{ $image->id }}]" value="{{ old('image_order.'.$image->id, $image->order) }}" min="0"></label><div>
                         @unless ($image->is_primary)<button type="button" data-image-action="primary" data-url="{{ route('admin.products.images.primary', [$product, $image]) }}">Definir como capa</button>@endunless
                         <button type="button" class="danger" data-image-action="delete" data-url="{{ route('admin.products.images.destroy', [$product, $image]) }}">Excluir</button>
                     </div>
@@ -115,7 +115,7 @@
             <button class="btn ghost add-sales-link" type="button" data-add-sales-link>+ Adicionar local</button>
         </div>
 
-        @php($salesLinks = old('sales_links', $product->exists ? $product->salesLinks->map(fn ($link) => ['channel' => $link->channel->name, 'url' => $link->url, 'price' => $link->price])->all() : []))
+        @php($salesLinks = old('sales_links', $product->exists ? $product->allSalesLinks->map(fn ($link) => ['channel' => $link->channel->name, 'url' => $link->url, 'price' => $link->price, 'original_price' => $link->original_price])->all() : []))
 
         <datalist id="sales-channel-suggestions">
             @foreach ($salesChannels as $channel)<option value="{{ $channel->name }}"></option>@endforeach
@@ -128,6 +128,7 @@
                     <label><span>Local de venda</span><input name="sales_links[{{ $index }}][channel]" value="{{ $link['channel'] ?? '' }}" list="sales-channel-suggestions" placeholder="Ex.: Mercado Livre"></label>
                     <label><span>Link direto do anúncio</span><input type="url" name="sales_links[{{ $index }}][url]" value="{{ $link['url'] ?? '' }}" placeholder="https://..."></label>
                     <label><span>Valor neste local (R$)</span><input type="number" step="0.01" min="0.01" name="sales_links[{{ $index }}][price]" value="{{ $link['price'] ?? '' }}"></label>
+                    <label><span>Preço anterior (opcional)</span><input type="number" step="0.01" min="0.01" name="sales_links[{{ $index }}][original_price]" value="{{ $link['original_price'] ?? '' }}"></label>
                     <button type="button" class="remove-sales-link" data-remove-sales-link aria-label="Remover este local">Remover</button>
                 </div>
             @endforeach
@@ -141,6 +142,7 @@
         @error('sales_links.*.price') <small class="field-error">{{ $message }}</small> @enderror
     </section>
 
+    @include('admin.products.details')
     <div class="sticky-actions">@if ($product->exists)<button class="btn danger-button" type="submit" form="delete-product-form">Excluir produto</button>@endif<a class="btn ghost" href="{{ route('admin.products.index') }}">Cancelar</a><button class="btn primary">Salvar produto</button></div>
 </form>
 @if ($product->exists)<form id="delete-product-form" method="post" action="{{ route('admin.products.destroy', $product) }}" data-confirm data-confirm-title="Excluir produto?" data-confirm-message="Esta ação removerá o produto e suas imagens permanentemente." data-confirm-label="Excluir produto">@csrf @method('delete')</form>@endif

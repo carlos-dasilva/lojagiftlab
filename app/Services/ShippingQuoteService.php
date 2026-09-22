@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -20,11 +21,15 @@ class ShippingQuoteService
             }
         }
 
-        $response = Http::acceptJson()->withToken($config['token'])->withHeaders(['User-Agent' => $config['user_agent']])->timeout(15)->post(rtrim($config['base_url'], '/').'/me/shipment/calculate', [
-            'from' => ['postal_code' => preg_replace('/\D/', '', $config['from_postal_code'])],
-            'to' => ['postal_code' => preg_replace('/\D/', '', $postalCode)],
-            'products' => [['id' => (string) $product->id, 'width' => (float) $product->width_cm, 'height' => (float) $product->height_cm, 'length' => (float) $product->length_cm, 'weight' => (float) $product->weight_kg, 'insurance_value' => (float) ($product->starting_price ?? 1), 'quantity' => 1]],
-        ]);
+        try {
+            $response = Http::acceptJson()->withToken($config['token'])->withHeaders(['User-Agent' => $config['user_agent']])->timeout(15)->post(rtrim($config['base_url'], '/').'/me/shipment/calculate', [
+                'from' => ['postal_code' => preg_replace('/\D/', '', $config['from_postal_code'])],
+                'to' => ['postal_code' => preg_replace('/\D/', '', $postalCode)],
+                'products' => [['id' => (string) $product->id, 'width' => (float) $product->width_cm, 'height' => (float) $product->height_cm, 'length' => (float) $product->length_cm, 'weight' => (float) $product->weight_kg, 'insurance_value' => (float) ($product->starting_price ?? 1), 'quantity' => 1]],
+            ]);
+        } catch (ConnectionException $exception) {
+            throw new RuntimeException('O serviço de frete está temporariamente indisponível. Tente novamente em alguns instantes.', 0, $exception);
+        }
         if ($response->failed()) {
             throw new RuntimeException('Não foi possível consultar o frete agora. Tente novamente em alguns instantes.');
         }
@@ -33,6 +38,8 @@ class ShippingQuoteService
             ->filter(fn ($item) => is_array($item)
                 && empty($item['error'])
                 && isset($item['price'])
+                && is_numeric($item['custom_price'] ?? $item['price'])
+                && (float) ($item['custom_price'] ?? $item['price']) >= 0
                 && str_contains(strtolower((string) ($item['company']['name'] ?? '')), 'correios'))
             ->map(fn ($item) => [
                 'name' => $item['name'] ?? 'Entrega',

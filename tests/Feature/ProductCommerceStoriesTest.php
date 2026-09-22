@@ -6,12 +6,21 @@ use App\Models\Product;
 use App\Models\SalesChannel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ProductCommerceStoriesTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_shipping_connection_failure_returns_a_friendly_error(): void
+    {
+        config(['services.melhor_envio.token' => 'test-token']);
+        Http::fake(fn () => throw new ConnectionException('Connection failed'));
+        $product = $this->product(['weight_kg' => 0.5, 'width_cm' => 15, 'height_cm' => 10, 'length_cm' => 20]);
+        $this->postJson(route('products.shipping', $product), ['postal_code' => '01310100'])->assertStatus(422)->assertJsonPath('message', 'O serviço de frete está temporariamente indisponível. Tente novamente em alguns instantes.');
+    }
 
     private function product(array $extra = []): Product
     {

@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProductSalesLink extends Model
 {
-    protected $fillable = ['product_id', 'sales_channel_id', 'url', 'price', 'label', 'message', 'order', 'active'];
+    protected $fillable = ['product_id', 'sales_channel_id', 'url', 'price', 'original_price', 'label', 'message', 'order', 'active'];
 
-    protected $casts = ['price' => 'decimal:2', 'active' => 'boolean'];
+    protected $casts = ['price' => 'decimal:2', 'original_price' => 'decimal:2', 'active' => 'boolean'];
 
     public function product()
     {
